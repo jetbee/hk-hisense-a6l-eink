@@ -127,3 +127,7 @@ The framework must register `"epd"` in `SystemServiceRegistry` as a cached
 service, gated on `ro.hmct.epd.support == "1"`, fetching the `epd` binder
 from `ServiceManager` without waiting and returning `null` if absent,
 otherwise `new EpdManager(IEpdManager.Stub.asInterface(b), ctx)`.
+
+In this repository that is `epd/patches/frameworks_base/0001-*.patch`
+(spec 02 section 5.2), which registers the service without the gate; see
+`/QUESTIONS.md` item 31.
