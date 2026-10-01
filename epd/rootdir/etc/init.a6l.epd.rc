@@ -1,0 +1,65 @@
+# Copyright (C) 2026 The a6l-eink-oss authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Init property bridge of the E-ink service (spec 02 section 1.4).
+#
+# The service (domain system_app) may not write these nodes on 18.1, so it
+# sets a property under sys.a6l.epd. and init writes the node. Value
+# properties carry the value to write; counter properties carry a new number
+# for each request and always write the same value. init runs a trigger on
+# every set, also when the value is unchanged (PropertySet calls
+# PropertyChanged unconditionally), so repeated requests reach the node.
+#
+# The service sets none of the fb1 properties before "E-ink ready" (5 s after
+# boot completion): writing an fb1/epd_* node before epd_connect crashes the
+# stock HWC.
+
+# Rear (E-ink side) touch, value 0/1.
+on property:sys.a6l.epd.ext_touch=*
+    write /sys/ctp1/ctp_func/tpenable ${sys.a6l.epd.ext_touch}
+
+# Front (LCD side) touch, value 0/1.
+on property:sys.a6l.epd.front_touch=*
+    write /sys/ctp/ctp_func/tpenable ${sys.a6l.epd.front_touch}
+
+# Counter: re-attach and unblank the E-ink.
+on property:sys.a6l.epd.reconnect=*
+    write /sys/class/graphics/fb1/epd_connect 0
+    write /sys/class/graphics/fb1/epd_connect 1
+
+# Counter: LCD backlight off.
+on property:sys.a6l.epd.lcd_off=*
+    write /sys/class/leds/lcd-backlight/brightness 0
+
+# Refresh mode, decimal value.
+on property:sys.a6l.epd.mode=*
+    write /sys/class/graphics/fb1/epd_display_mode ${sys.a6l.epd.mode}
+
+# Counter: show /kdebuginfo/edpd/bitmap.raw.
+on property:sys.a6l.epd.commit_bitmap=*
+    write /sys/class/graphics/fb1/epd_commit_bitmap 1
+
+# Counter: full ghost-clearing refresh.
+on property:sys.a6l.epd.force_clear=*
+    write /sys/class/graphics/fb1/epd_force_clear 1
+
+# Tuning values 0..100.
+on property:sys.a6l.epd.contrast=*
+    write /sys/class/graphics/fb1/epd_contrast ${sys.a6l.epd.contrast}
+
+on property:sys.a6l.epd.black=*
+    write /sys/class/graphics/fb1/epd_black_threshold ${sys.a6l.epd.black}
+
+on property:sys.a6l.epd.white=*
+    write /sys/class/graphics/fb1/epd_white_threshold ${sys.a6l.epd.white}
