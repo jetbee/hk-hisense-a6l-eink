@@ -76,12 +76,24 @@ User settings (`Settings.System`, current user):
 
 | Key | Default | Meaning |
 |---|---|---|
-| `a6l_epd_sleep_clock` | 1 | clock on the sleeping screen (settings page) |
+| `a6l_epd_sleep_clock` | 1 | clock on the sleeping screen ("E-ink" settings page) |
 | `a6l_epd_sleep_clock_style` | 0 | 0 analog, 1 digital (settings page) |
 | `fp_unlock_screen` | absent | per-finger unlock screen, JSON (settings page) |
 | `a6l_epd_power_key_wake` | 0 | 0: front power key wakes to the LCD; 1: to the last screen |
 | `a6l_epd_default_wake` | 0 | 0: other wake-ups go to the last screen; 1: to the LCD |
 | `a6l_epd_eink_key_action` | 0 | E-ink key while on the E-ink: 0 back to the LCD, 1 sleep |
+| `a6l_epd_swap_keys_on_eink` | 0 | 1: on the E-ink the power button goes back to the LCD and the E-ink key sleeps (settings page, "Buttons") |
+
+Button roles (spec 02 section 9.1): with the screen on, the power button
+sleeps and the E-ink key switches between LCD only and E-ink only; with the
+screen off, the power button wakes to the LCD and the E-ink key to the
+E-ink. Rear touch gestures are not used (9.3).
+
+## Later
+
+- Show a "Power off" status picture on the E-ink at shutdown, through the
+  same bitmap path as the sleeping screen (spec 02 section 9.4, low
+  priority). Presentation pages on the E-ink are deferred.
 
 ## License
 

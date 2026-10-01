@@ -16,14 +16,19 @@
 
 package org.a6leink.epd;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
@@ -33,7 +38,19 @@ import com.android.internal.os.DeviceKeyHandler;
 import com.hmct.epd.IEpdManager;
 
 /**
- * LineageOS device key handler for the rear E-ink key (spec 02 section 5.1).
+ * LineageOS device key handler for the rear E-ink key (spec 02 sections 5.1
+ * and 9).
+ *
+ * Button roles (spec 02 section 9.1), the same on both screens:
+ * screen on: power button sleeps (left to the framework), E-ink key switches
+ * between LCD only and E-ink only; screen off: power button wakes to the LCD,
+ * E-ink key wakes to the E-ink. With {@code a6l_epd_swap_keys_on_eink} = 1
+ * (section 9.2), while the E-ink is in use and the screen is on, the power
+ * button switches back to the LCD and the E-ink key sleeps; the power button's
+ * long press is then not available on the E-ink.
+ *
+ * "E-ink in use" is read from the published display type property, without a
+ * binder call; the swap setting is cached by a content observer.
  * Loaded into system_server from this APK through the lineage-sdk overlay
  * ({@code config_deviceKeyHandlerLibs} / {@code config_deviceKeyHandlerClasses}).
  *
@@ -50,10 +67,16 @@ public final class EpdKeyHandler implements DeviceKeyHandler {
     public static final int SCANCODE_EINK_KEY = 616;
 
     private static final int SOURCE_USER = 1;
+    private static final long OBSERVER_RETRY_MS = 5000;
 
     private final Context mContext;
     private final PowerManager mPowerManager;
     private final Handler mHandler;
+
+    /** Cached a6l_epd_swap_keys_on_eink of the current user. */
+    private volatile boolean mSwapOnEink;
+    /** A power button press whose down event was taken for the swap. */
+    private boolean mPowerSwapped;
 
     public EpdKeyHandler(Context context) {
         mContext = context;
@@ -61,25 +84,86 @@ public final class EpdKeyHandler implements DeviceKeyHandler {
         HandlerThread thread = new HandlerThread("A6lEpdKey");
         thread.start();
         mHandler = new Handler(thread.getLooper());
+        // The handler is created early in system_server; settings may not be up yet.
+        mHandler.post(this::startObserving);
     }
 
     @Override
     public KeyEvent handleKeyEvent(KeyEvent event) {
+        final int action = event.getAction();
         if (event.getScanCode() == SCANCODE_EINK_KEY) {
-            if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
+            if (action == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
                 final boolean interactive = mPowerManager.isInteractive();
-                mHandler.post(() -> onEinkKey(interactive));
+                if (interactive && mSwapOnEink && isEinkInUse()) {
+                    // Swapped role: the E-ink key puts the phone to sleep.
+                    mHandler.post(() -> {
+                        sendKeyPressed();
+                        mPowerManager.goToSleep(SystemClock.uptimeMillis(),
+                                PowerManager.GO_TO_SLEEP_REASON_POWER_BUTTON, 0);
+                    });
+                } else {
+                    mHandler.post(() -> onEinkKey(interactive));
+                }
             }
             return null; // both down and up are consumed
         }
-        if (event.getKeyCode() == KeyEvent.KEYCODE_POWER
-                && event.getAction() == KeyEvent.ACTION_DOWN
-                && event.getRepeatCount() == 0
-                && !mPowerManager.isInteractive()) {
-            // Recorded before the screen-on that this key causes.
-            mHandler.post(this::onPowerKeyWhileOff);
+
+        if (event.getKeyCode() == KeyEvent.KEYCODE_POWER) {
+            if (action == KeyEvent.ACTION_DOWN) {
+                if (event.getRepeatCount() != 0) {
+                    return mPowerSwapped ? null : event;
+                }
+                final boolean interactive = mPowerManager.isInteractive();
+                mPowerSwapped = interactive && mSwapOnEink && isEinkInUse();
+                if (mPowerSwapped) {
+                    return null; // no sleep, no long press: back to the LCD on release
+                }
+                if (!interactive) {
+                    // Recorded before the screen-on that this key causes.
+                    mHandler.post(this::onPowerKeyWhileOff);
+                }
+            } else if (action == KeyEvent.ACTION_UP && mPowerSwapped) {
+                mPowerSwapped = false;
+                if (!event.isCanceled()) {
+                    mHandler.post(() -> setDisplayType(EpdSettings.TYPE_LCD));
+                }
+                return null;
+            }
         }
         return event;
+    }
+
+    /** E-ink only is active, from the published property (no binder call). */
+    private static boolean isEinkInUse() {
+        return SystemProperties.getInt(EpdSettings.PROP_DISPLAY_TYPE, EpdSettings.TYPE_LCD)
+                == EpdSettings.TYPE_EINK;
+    }
+
+    private void startObserving() {
+        try {
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(EpdSettings.SWAP_KEYS_ON_EINK), false,
+                    new ContentObserver(mHandler) {
+                        @Override
+                        public void onChange(boolean selfChange, Uri uri) {
+                            readSwapSetting();
+                        }
+                    }, UserHandle.USER_ALL);
+            mContext.registerReceiverAsUser(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    readSwapSetting();
+                }
+            }, UserHandle.ALL, new IntentFilter(Intent.ACTION_USER_SWITCHED), null, mHandler);
+            readSwapSetting();
+        } catch (RuntimeException e) {
+            Log.i(TAG, "Settings not available yet, retrying: " + e);
+            mHandler.postDelayed(this::startObserving, OBSERVER_RETRY_MS);
+        }
+    }
+
+    private void readSwapSetting() {
+        mSwapOnEink = userSetting(EpdSettings.SWAP_KEYS_ON_EINK, 0) != 0;
     }
 
     private static IEpdManager service() {
@@ -91,9 +175,26 @@ public final class EpdKeyHandler implements DeviceKeyHandler {
                 UserHandle.USER_CURRENT);
     }
 
-    private void onEinkKey(boolean interactive) {
+    private void sendKeyPressed() {
         mContext.sendBroadcastAsUser(new Intent(EpdSettings.ACTION_EINK_KEY_PRESSED),
                 UserHandle.CURRENT);
+    }
+
+    private void setDisplayType(int type) {
+        IEpdManager epd = service();
+        if (epd == null) {
+            Log.w(TAG, "Service not available");
+            return;
+        }
+        try {
+            epd.setDisplayType(type, false);
+        } catch (RemoteException | RuntimeException e) {
+            Log.e(TAG, "setDisplayType failed", e);
+        }
+    }
+
+    private void onEinkKey(boolean interactive) {
+        sendKeyPressed();
         IEpdManager epd = service();
         if (epd == null) {
             Log.w(TAG, "E-ink key: service not available");

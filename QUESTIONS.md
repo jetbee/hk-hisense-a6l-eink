@@ -68,12 +68,15 @@ spec 02's open questions (section 8).
 
 ## Product decisions (spec recommendation as default, setting where cheap)
 
-12. **Default wake target** [6]. Default: the port's rule (wake to the
+12. **Default wake target** [6]. *Settled by spec 02 section 9.1: the
+    power button wakes to the LCD, the E-ink key to the E-ink; the defaults
+    below match.* Default: the port's rule (wake to the
     last used screen unless something named one; the front power key names
     the LCD while `a6l_epd_power_key_wake` is 0). New setting
     `Settings.System a6l_epd_default_wake`: 0 = last used screen (default),
     1 = LCD as on stock. No UI; `settings put system ...`.
-13. **E-ink key while the E-ink is in use** [8]. Default: back to the LCD
+13. **E-ink key while the E-ink is in use** [8]. *Settled by spec 02
+    section 9.1: back to the LCD; the default below matches.* Default: back to the LCD
     (port). New setting `Settings.System a6l_epd_eink_key_action`: 0 = back
     to the LCD (default), 1 = sleep (stock). No UI.
 14. **`setDisplayPowerMode`** [7]. No-op, as recommended.
@@ -81,7 +84,8 @@ spec 02's open questions (section 8).
     mode 6 while a lock is on) and, as on stock, all locks are cleared when
     the type becomes -1. The service does not observe the camera or video
     playback itself (nobody calls `lockEpdMode` on 18.1).
-16. **Gesture node and unlock-style settings** [10]. Not implemented:
+16. **Gesture node and unlock-style settings** [10]. *Settled by spec 02
+    section 9.3: rear touch gestures are not wanted.* Not implemented:
     `setEinkThemeMode`, `setEinkKeyguardMode` and `setGestureUnlock` store
     their argument in memory only (shown in dumpsys), as the spec
     recommends for the first two. Enabling rear-touch screen-off gestures
@@ -91,7 +95,8 @@ spec 02's open questions (section 8).
     a query of the top task (`getTasks(1)`) on every `onTaskStackChanged`,
     which also sees a new top activity inside the same task. Still package
     granularity; no per-activity modes.
-18. **Presentation slots and shutdown picture** [12]. Not implemented; the
+18. **Presentation slots and shutdown picture** [12]. *Deferred by spec 02
+    section 9.4; see item 37.* Not implemented; the
     slot methods are accepted and ignored. The status screen uses the same
     bitmap path, so slots can be added later.
 19. **Per-app mode file** [13]. Device-protected storage, as recommended:
@@ -163,3 +168,26 @@ spec 02's open questions (section 8).
     against frameworks/base HEAD of the 18.1 tree and apply there. The
     working tree currently carries uncommitted local changes in the same
     two files (the port's), so they must be reverted before applying.
+
+
+## Spec 02 section 9 (product decisions of 2026-10-02)
+
+36. **Button swap on the E-ink** (9.2). `Settings.System
+    a6l_epd_swap_keys_on_eink` (default 0), shown under "Buttons" on the
+    "E-ink" settings page (the status screen page, renamed). When it is 1,
+    the screen is on and the published display type
+    (`sys.sysctl.display_type`) is 4, the key handler takes the whole power
+    button press (down and up, so neither sleep nor the long-press power
+    menu happens) and switches back to the LCD on release; the E-ink key
+    puts the phone to sleep. The key path makes no binder call: the
+    display type comes from the property and the setting is cached by a
+    content observer (registered on the handler's thread, retried until
+    the settings provider is up, re-read on user switch). Decision: "E-ink
+    in use" means type 4 only, not the mirror (2), where the LCD is also
+    on. The own settings `a6l_epd_default_wake` and
+    `a6l_epd_eink_key_action` are kept (no UI); their defaults match 9.1.
+37. **Later item (9.4, low priority).** Show a "Power off" status picture
+    on the E-ink at shutdown (`ACTION_SHUTDOWN`), drawn like the sleeping
+    screen and committed through the same bitmap path
+    (`/kdebuginfo/edpd/bitmap.raw`). Presentation pages on the E-ink stay
+    deferred. Not implemented yet.

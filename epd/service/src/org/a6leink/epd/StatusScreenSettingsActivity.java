@@ -25,8 +25,10 @@ import android.widget.RadioGroup;
 import android.widget.Switch;
 
 /**
- * Settings of the E-ink status screen (spec 02 section 6.6): clock on the
- * sleeping screen and its style. Changes take effect at the next draw.
+ * The "E-ink" settings page: the status screen (spec 02 section 6.6, clock on
+ * the sleeping screen and its style; changes take effect at the next draw)
+ * and, under "Buttons", the optional swap of the buttons while the E-ink is in
+ * use (spec 02 section 9.2).
  */
 public class StatusScreenSettingsActivity extends Activity {
     private Switch mClock;
@@ -54,6 +56,12 @@ public class StatusScreenSettingsActivity extends Activity {
             Settings.System.putIntForUser(cr, EpdSettings.SLEEP_CLOCK, checked ? 1 : 0, user);
             setStyleEnabled(checked);
         });
+        Switch swap = findViewById(R.id.swap_keys_on_eink);
+        swap.setChecked(Settings.System.getIntForUser(cr, EpdSettings.SWAP_KEYS_ON_EINK, 0,
+                user) != 0);
+        swap.setOnCheckedChangeListener((button, checked) ->
+                Settings.System.putIntForUser(cr, EpdSettings.SWAP_KEYS_ON_EINK,
+                        checked ? 1 : 0, user));
         mStyle.setOnCheckedChangeListener((group, id) ->
                 Settings.System.putIntForUser(cr, EpdSettings.SLEEP_CLOCK_STYLE,
                         id == R.id.clock_style_digital ? EpdSettings.CLOCK_STYLE_DIGITAL

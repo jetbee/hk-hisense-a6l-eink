@@ -25,13 +25,17 @@
     <!-- 短い形式 (例: 10月2日(金)) -->
     <string name="status_date_skeleton">MMMdEEE</string>
 
-    <string name="status_settings_title">E-ink ステータス画面</string>
-    <string name="status_settings_summary">E-ink を使っていないときの表示</string>
+    <string name="status_settings_title">E-ink</string>
+    <string name="status_settings_summary">ステータス画面とボタン</string>
+    <string name="status_settings_heading">ステータス画面</string>
     <string name="status_settings_clock">スリープ画面に時計を表示</string>
     <string name="status_settings_clock_summary">画面オフ中は 1 分ごとに更新します</string>
     <string name="status_settings_style">時計のスタイル</string>
     <string name="status_settings_style_analog">アナログ</string>
     <string name="status_settings_style_digital">デジタル</string>
+    <string name="buttons_heading">ボタン</string>
+    <string name="buttons_swap_on_eink">E-ink 使用中はボタンを入れ替える</string>
+    <string name="buttons_swap_on_eink_summary">E-ink の使用中は、電源ボタンで液晶画面に戻り、E-ink キーでスリープします。このとき E-ink では電源ボタンの長押し (電源メニュー) は使えません。</string>
 
     <string name="finger_unlock_title">指紋ロック解除後の画面</string>
     <string name="finger_unlock_summary">指ごとにロック解除後の画面を選択します</string>

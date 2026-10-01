@@ -26,6 +26,13 @@
         android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
         android:paddingTop="16dp">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/status_settings_heading"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?android:attr/colorAccent" />
+
         <Switch
             android:id="@+id/sleep_clock"
             android:layout_width="match_parent"
@@ -67,5 +74,28 @@
                 android:minHeight="48dp"
                 android:text="@string/status_settings_style_digital" />
         </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="32dp"
+            android:text="@string/buttons_heading"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?android:attr/colorAccent" />
+
+        <Switch
+            android:id="@+id/swap_keys_on_eink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?android:attr/listPreferredItemHeight"
+            android:text="@string/buttons_swap_on_eink"
+            android:textAppearance="?android:attr/textAppearanceListItem" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            android:text="@string/buttons_swap_on_eink_summary"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
     </LinearLayout>
 </ScrollView>

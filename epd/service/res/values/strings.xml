@@ -29,14 +29,18 @@
          date. Long form by default; a locale may pick a shorter skeleton. -->
     <string name="status_date_skeleton">EEEEMMMMd</string>
 
-    <!-- Status screen settings page (Settings > Display) -->
-    <string name="status_settings_title">E-ink status screen</string>
-    <string name="status_settings_summary">What the E-ink shows while it is not in use</string>
+    <!-- E-ink settings page (Settings > Display): status screen and buttons -->
+    <string name="status_settings_title">E-ink</string>
+    <string name="status_settings_summary">Status screen and buttons</string>
+    <string name="status_settings_heading">Status screen</string>
     <string name="status_settings_clock">Clock on the sleeping screen</string>
     <string name="status_settings_clock_summary">Redrawn once a minute while the screen is off</string>
     <string name="status_settings_style">Clock style</string>
     <string name="status_settings_style_analog">Analog</string>
     <string name="status_settings_style_digital">Digital</string>
+    <string name="buttons_heading">Buttons</string>
+    <string name="buttons_swap_on_eink">Swap buttons on the E-ink</string>
+    <string name="buttons_swap_on_eink_summary">While the E-ink is in use, the power button switches back to the LCD and the E-ink key puts the phone to sleep. The power menu (long press) is then not available on the E-ink.</string>
 
     <!-- Per-finger unlock screen settings page (Settings > Security) -->
     <string name="finger_unlock_title">Fingerprint unlock screen</string>

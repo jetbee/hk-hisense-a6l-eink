@@ -566,6 +566,10 @@ final class EpdService {
         }
     }
 
+    /**
+     * Recorded for dumpsys only. Rear touch gestures are not wanted (spec 02
+     * section 9.3): nothing writes /sys/ctp1/ctp_func/gesture.
+     */
     void setGestureUnlock(int value) {
         synchronized (mLock) {
             mGestureUnlock = value;

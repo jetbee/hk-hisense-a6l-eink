@@ -53,9 +53,21 @@ public final class EpdSettings {
     public static final String POWER_KEY_WAKE = "a6l_epd_power_key_wake";
     public static final String SLEEP_CLOCK = "a6l_epd_sleep_clock";
     public static final String SLEEP_CLOCK_STYLE = "a6l_epd_sleep_clock_style";
-    /** Own addition: E-ink key while the E-ink is in use. 0 = back to the LCD, 1 = sleep. */
+    /**
+     * Spec 02 section 9.2: 1 = while the E-ink is in use and the screen is on, the
+     * power button switches back to the LCD and the E-ink key sleeps. Default 0.
+     */
+    public static final String SWAP_KEYS_ON_EINK = "a6l_epd_swap_keys_on_eink";
+    /**
+     * Own addition: E-ink key while the E-ink is in use (no swap). 0 = back to the
+     * LCD (default, spec 02 section 9.1), 1 = sleep (stock).
+     */
     public static final String EINK_KEY_ACTION = "a6l_epd_eink_key_action";
-    /** Own addition: wake target without a named display. 0 = last used screen, 1 = LCD. */
+    /**
+     * Own addition: wake target of wake-ups that name no display (not the power
+     * button, which names the LCD, nor the E-ink key, which names the E-ink).
+     * 0 = last used screen (default), 1 = LCD.
+     */
     public static final String DEFAULT_WAKE = "a6l_epd_default_wake";
     public static final String ACCELEROMETER_ROTATION_RESTORE = "accelerometer_rotation_restore";
     /** Settings.Secure key restored for upgrades from older builds. */
