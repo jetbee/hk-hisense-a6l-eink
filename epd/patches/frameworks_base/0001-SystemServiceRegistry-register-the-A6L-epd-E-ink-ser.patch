@@ -1,0 +1,92 @@
+From 9294da8900f117832b0072607866903bda0e1a09 Mon Sep 17 00:00:00 2001
+From: jetbee <7734987+jetbee@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 12:00:00 +0000
+Subject: [PATCH 1/2] SystemServiceRegistry: register the A6L "epd" E-ink
+ service
+
+Context.getSystemService("epd") returns a com.hmct.epd.EpdManager
+wrapping the "epd" binder, published by the E-ink service app of
+a6l-eink-oss. The manager class lives in the com.hmct.epd boot jar, so
+the cached fetcher reaches it by reflection; a missing binder or class
+is reported as "service not found" and the caller gets null. The
+registration is unconditional (the stock ro.hmct.epd.support gate is
+not checked here).
+
+Implemented from cleanroom specs 01-com.hmct.epd.md and
+02-epd-service.md (section 5.2).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+Copyright (C) 2026 The a6l-eink-oss authors
+Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
+The patched files keep their own license headers.
+
+ .../android/app/SystemServiceRegistry.java    | 38 +++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+diff --git a/core/java/android/app/SystemServiceRegistry.java b/core/java/android/app/SystemServiceRegistry.java
+index e599a5c..c496410 100644
+--- a/core/java/android/app/SystemServiceRegistry.java
++++ b/core/java/android/app/SystemServiceRegistry.java
+@@ -1334,6 +1334,8 @@ public final class SystemServiceRegistry {
+                         return new DreamManager(ctx);
+                     }});
+ 
++        registerEpdService();
++
+         sInitializing = true;
+         try {
+             // Note: the following functions need to be @SystemApis, once they become mainline
+@@ -1386,6 +1388,7 @@ public final class SystemServiceRegistry {
+                 case Context.CONTENT_CAPTURE_MANAGER_SERVICE:
+                 case Context.APP_PREDICTION_SERVICE:
+                 case Context.INCREMENTAL_SERVICE:
++                case "epd": // E-ink service app, may not be up yet
+                     return null;
+             }
+             Slog.wtf(TAG, "Manager wrapper not available: " + name);
+@@ -1410,6 +1413,41 @@ public final class SystemServiceRegistry {
+         return serviceName;
+     }
+ 
++    /**
++     * Registers "epd", the E-ink service of the Hisense A6L (a6l-eink-oss,
++     * spec 02 section 5.2): a cached service whose fetcher wraps the "epd"
++     * binder in a com.hmct.epd.EpdManager. The manager lives in the
++     * com.hmct.epd boot jar, which is itself built against the framework, so
++     * it is reached by reflection instead of a build dependency. A missing
++     * binder or library is reported as "service not found" (the caller gets
++     * null). Must be called during static initialization only.
++     */
++    private static void registerEpdService() {
++        final String name = "epd";
++        SYSTEM_SERVICE_FETCHERS.put(name, new CachedServiceFetcher<Object>() {
++            @Override
++            public Object createService(ContextImpl ctx) throws ServiceNotFoundException {
++                final IBinder b = ServiceManager.checkService(name);
++                if (b == null) {
++                    throw new ServiceNotFoundException(name);
++                }
++                try {
++                    final Class<?> iface = Class.forName("com.hmct.epd.IEpdManager");
++                    final Class<?> stub = Class.forName("com.hmct.epd.IEpdManager$Stub");
++                    final Class<?> manager = Class.forName("com.hmct.epd.EpdManager");
++                    final Object service =
++                            stub.getMethod("asInterface", IBinder.class).invoke(null, b);
++                    return manager.getConstructor(iface, Context.class)
++                            .newInstance(service, ctx.getOuterContext());
++                } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
++                    Log.w(TAG, "Cannot create the epd manager", e);
++                    throw new ServiceNotFoundException(name);
++                }
++            }
++        });
++        SYSTEM_SERVICE_CLASS_NAMES.put(name, "EpdManager");
++    }
++
+     /**
+      * Statically registers a system service with the context.
+      * This method must be called during static initialization only.
+-- 
+2.52.0
+

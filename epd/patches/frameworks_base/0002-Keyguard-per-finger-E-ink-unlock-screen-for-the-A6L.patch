@@ -1,0 +1,106 @@
+From 7a126f951f4ebc011b963ee3bd7e1b20625c1694 Mon Sep 17 00:00:00 2001
+From: jetbee <7734987+jetbee@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 12:00:00 +0000
+Subject: [PATCH 2/2] Keyguard: per-finger E-ink unlock screen for the A6L
+
+On a successful fingerprint authentication, before the unlock is
+handled, read Settings.System "fp_unlock_screen" for the authenticated
+user: a JSON object mapping fingerprint ids to "0" (LCD) or "1"
+(E-ink). For a finger with a choice, tell the E-ink service: as the
+wake-up display (setWakeupSourceType(1, 0|4, value == 0)) when the
+unlock wakes the device, or as the display type (setDisplayType) when
+the device is already interactive. The service is reached by
+reflection, falling back to a direct binder lookup when the context
+cached a null manager. Errors are logged and the unlock proceeds.
+
+Implemented from cleanroom specs 01-com.hmct.epd.md and
+02-epd-service.md (section 5.3).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+Copyright (C) 2026 The a6l-eink-oss authors
+Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
+The patched files keep their own license headers.
+
+ .../keyguard/KeyguardUpdateMonitor.java       | 58 +++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
+index 98ec786..4708268 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
+@@ -1261,6 +1261,63 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+         }
+     };
+ 
++    /**
++     * Hisense A6L E-ink (a6l-eink-oss, spec 02 section 5.3): per-finger unlock
++     * screen. Settings.System "fp_unlock_screen" (per user) is a JSON object
++     * mapping fingerprint ids to "0" (LCD) or "1" (E-ink). Before the unlock is
++     * handled, the E-ink service is told which screen to use: as the wake-up
++     * display when the unlock wakes the device, otherwise as the display type.
++     * The service is reached by reflection (no build dependency on com.hmct.epd).
++     * Any error is logged and the unlock proceeds.
++     */
++    private void applyEpdUnlockScreen(AuthenticationResult result) {
++        try {
++            if (result == null || result.getFingerprint() == null) {
++                return;
++            }
++            final String json = Settings.System.getStringForUser(mContext.getContentResolver(),
++                    "fp_unlock_screen", result.getUserId());
++            if (json == null || json.isEmpty()) {
++                return;
++            }
++            final String value = new org.json.JSONObject(json).optString(
++                    Integer.toString(result.getFingerprint().getBiometricId()), null);
++            final int displayType;
++            if ("0".equals(value)) {
++                displayType = 0; // LCD
++            } else if ("1".equals(value)) {
++                displayType = 4; // E-ink only
++            } else {
++                return; // no choice for this finger
++            }
++            Object epd = mContext.getSystemService("epd");
++            Class<?> api = epd != null ? epd.getClass() : null; // com.hmct.epd.EpdManager
++            if (epd == null) {
++                // The registry caches a null when asked before the service was up.
++                final android.os.IBinder b = ServiceManager.checkService("epd");
++                if (b == null) {
++                    Log.w(TAG, "epd unlock screen: service not available");
++                    return;
++                }
++                epd = Class.forName("com.hmct.epd.IEpdManager$Stub")
++                        .getMethod("asInterface", android.os.IBinder.class).invoke(null, b);
++                // Call through the public interface (the proxy class is private).
++                api = Class.forName("com.hmct.epd.IEpdManager");
++            }
++            final android.os.PowerManager pm =
++                    mContext.getSystemService(android.os.PowerManager.class);
++            if (pm != null && pm.isInteractive()) {
++                api.getMethod("setDisplayType", int.class, boolean.class)
++                        .invoke(epd, displayType, false);
++            } else {
++                api.getMethod("setWakeupSourceType", int.class, int.class,
++                        boolean.class).invoke(epd, 1, displayType, displayType == 0);
++            }
++        } catch (Exception | LinkageError e) {
++            Log.w(TAG, "epd unlock screen failed", e);
++        }
++    }
++
+     // Trigger the fingerprint success path so the bouncer can be shown
+     private final FingerprintManager.FingerprintDetectionCallback mFingerprintDetectionCallback
+             = this::handleFingerprintAuthenticated;
+@@ -1276,6 +1333,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+         @Override
+         public void onAuthenticationSucceeded(AuthenticationResult result) {
+             Trace.beginSection("KeyguardUpdateMonitor#onAuthenticationSucceeded");
++            applyEpdUnlockScreen(result);
+             handleFingerprintAuthenticated(result.getUserId(), result.isStrongBiometric());
+             Trace.endSection();
+         }
+-- 
+2.52.0
+
