@@ -104,7 +104,8 @@ time the screen is shown again.
 The value used for "Clear" is **not** in this app: it is the single constant
 `EpdSettings.MODE_CLEAR` of the service, read through the service's options
 provider (`get_config`), so the settings app, the Quick Settings tile and the
-E-ink lock screen always agree. "Clear" = 3 is **confirmed on the panel**
+E-ink lock screen (when its clear option is on, on the service's "E-ink"
+page) always agree. "Clear" = 3 is **confirmed on the panel**
 (device test 2026-10-03: visibly clearer, scrolling stutters; spec 05
 section 8). Should it ever be retuned (1..8, the range the service
 accepts), change only that constant.

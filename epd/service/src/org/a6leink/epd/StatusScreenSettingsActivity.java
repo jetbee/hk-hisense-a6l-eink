@@ -49,7 +49,8 @@ import java.util.List;
  * the sleeping screen and its style; changes take effect at the next draw),
  * the sleeping screen's widgets and notifications (spec 03 sections 3 to 5)
  * and, under "Buttons", the optional swap of the buttons while the E-ink is in
- * use (spec 02 section 9.2).
+ * use (spec 02 section 9.2), and under "Lock screen" the refresh mode of the
+ * lock screen on the E-ink (spec 02 section 10 item 4a).
  */
 public class StatusScreenSettingsActivity extends Activity {
     private static final String TAG = "A6lEpdWidgets";
@@ -107,6 +108,12 @@ public class StatusScreenSettingsActivity extends Activity {
                 user) != 0);
         swap.setOnCheckedChangeListener((button, checked) ->
                 Settings.System.putIntForUser(cr, EpdSettings.SWAP_KEYS_ON_EINK,
+                        checked ? 1 : 0, user));
+        Switch keyguardClear = findViewById(R.id.keyguard_clear);
+        keyguardClear.setChecked(Settings.System.getIntForUser(cr, EpdSettings.KEYGUARD_CLEAR, 0,
+                user) != 0);
+        keyguardClear.setOnCheckedChangeListener((button, checked) ->
+                Settings.System.putIntForUser(cr, EpdSettings.KEYGUARD_CLEAR,
                         checked ? 1 : 0, user));
         mStyle.setOnCheckedChangeListener((group, id) ->
                 Settings.System.putIntForUser(cr, EpdSettings.SLEEP_CLOCK_STYLE,

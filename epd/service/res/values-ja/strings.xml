@@ -101,4 +101,9 @@
     <string name="tile_not_in_use">E-ink は使用されていません</string>
     <string name="tile_not_here">この画面では使用できません</string>
     <string name="tile_no_service">サービスが動作していません</string>
+
+    <!-- E-ink ページ: ロック画面 -->
+    <string name="lock_screen_heading">ロック画面</string>
+    <string name="keyguard_clear">ロック画面をくっきりモードにする</string>
+    <string name="keyguard_clear_summary">E-ink にロック画面を表示している間、標準モードの代わりにくっきりモードを使います。くっきりモードは鮮明ですが、スリープ解除後にロック画面が表示されるまで時間がかかります。</string>
 </resources>

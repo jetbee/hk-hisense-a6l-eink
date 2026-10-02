@@ -220,5 +220,28 @@
             android:paddingBottom="16dp"
             android:text="@string/buttons_swap_on_eink_summary"
             android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:text="@string/lock_screen_heading"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?android:attr/colorAccent" />
+
+        <Switch
+            android:id="@+id/keyguard_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?android:attr/listPreferredItemHeight"
+            android:text="@string/keyguard_clear"
+            android:textAppearance="?android:attr/textAppearanceListItem" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            android:text="@string/keyguard_clear_summary"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
     </LinearLayout>
 </ScrollView>

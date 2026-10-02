@@ -47,6 +47,9 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
     <!-- Slide one screen (experimental): gesture monitor on display 0 (signature). -->
     <uses-permission android:name="android.permission.MONITOR_INPUT" />
+    <!-- Wake into the E-ink with the keyguard: one userActivity (spec 02 section 10
+         item 4c; signature). -->
+    <uses-permission android:name="android.permission.DEVICE_POWER" />
 
     <application
         android:name=".EpdApplication"

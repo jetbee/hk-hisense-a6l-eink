@@ -115,4 +115,9 @@
     <string name="tile_not_in_use">E-ink not in use</string>
     <string name="tile_not_here">Not for this screen</string>
     <string name="tile_no_service">Service not running</string>
+
+    <!-- E-ink page: lock screen (spec 02 section 10 item 4a) -->
+    <string name="lock_screen_heading">Lock screen</string>
+    <string name="keyguard_clear">Clear mode on the lock screen</string>
+    <string name="keyguard_clear_summary">While the lock screen is shown on the E-ink, use the clear mode instead of the default mode. The clear mode looks sharper but the lock screen appears more slowly after waking.</string>
 </resources>

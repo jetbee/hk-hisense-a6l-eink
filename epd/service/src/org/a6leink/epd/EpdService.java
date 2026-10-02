@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.content.pm.ResolveInfo;
 import android.os.Binder;
 import android.os.Handler;
@@ -119,6 +120,13 @@ final class EpdService {
      */
     private boolean mStoreLoaded;
     private boolean mSaveAfterLoad;
+    /** a6l_epd_keyguard_clear (spec 02 section 10 item 4a): clear mode on the lock screen. */
+    private boolean mKeyguardClear;
+    /** Wake timing log (spec 02 section 10 item 4b). Thread-safe. */
+    private final WakeTimer mWake = new WakeTimer();
+    /** Spec 02 section 10 item 4c: one user activity after a locked wake into the E-ink. */
+    private final Runnable mWakeUserActivity = this::wakeUserActivity;
+    private static final long WAKE_USER_ACTIVITY_MS = 1500;
     private int mWakeupSource = SOURCE_USER;
     private boolean mWakeupLocked;
     private int mWakeupDisplay = NO_DISPLAY;
@@ -137,6 +145,7 @@ final class EpdService {
         thread.start();
         mHandler = new Handler(thread.getLooper());
         mEinkOnly = new EinkOnlyController(context, mHandler, mBridge);
+        mEinkOnly.setWakeTimer(mWake);
         mWidgets = new SleepWidgetHost(context);
         mStatus = new StatusScreen(context, mHandler, mBridge, mWidgets);
         mStore = new AppModeStore(context);
@@ -220,6 +229,22 @@ final class EpdService {
         }, boot, null, mHandler);
 
         registerPerAppReceivers();
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(EpdSettings.KEYGUARD_CLEAR), false,
+                new ContentObserver(mHandler) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        final boolean clear = readKeyguardClear();
+                        synchronized (mLock) {
+                            mKeyguardClear = clear;
+                            evaluateLocked("keyguard clear=" + clear);
+                        }
+                    }
+                }, UserHandle.USER_ALL);
+        final boolean keyguardClear = readKeyguardClear();
+        synchronized (mLock) {
+            mKeyguardClear = keyguardClear;
+        }
         // Per-app evaluation inputs (spec 05 section 6). Each reports its current
         // state when started, which also covers a restart of this process. The
         // camera watcher starts at "E-ink ready", when cameraserver is surely up.
@@ -432,9 +457,11 @@ final class EpdService {
         // The E-ink lock screen (spec 05 section 6.2 step 1) must be known before
         // the type change evaluates the refresh mode.
         final boolean keyguard = queryKeyguardLocked();
+        final boolean keyguardClear = readKeyguardClear();
         final int target;
         synchronized (mLock) {
             mKeyguardLocked = keyguard;
+            mKeyguardClear = keyguardClear;
             mWakeupLocked = false;
             int wanted;
             if (mWakeupDisplay != NO_DISPLAY) {
@@ -451,10 +478,21 @@ final class EpdService {
             int restricted = restrictLocked(wanted);
             target = restricted == NO_DISPLAY || restricted == EpdSettings.TYPE_OFF
                     ? EpdSettings.TYPE_LCD : restricted;
+            if (EpdSettings.isEinkType(target)) {
+                mWake.start(target, keyguard);
+            } else {
+                mWake.stop();
+            }
             if (!changeTypeLocked(target, true)) {
                 // Same type as before: the lock screen state may still have changed.
                 evaluateLocked("screen on");
             }
+            mWake.step("display type set to " + target + ", refresh mode " + mEpdMode
+                    + " (" + mModeReason + ")");
+        }
+        mHandler.removeCallbacks(mWakeUserActivity);
+        if (keyguard && EpdSettings.isEinkType(target)) {
+            mHandler.postDelayed(mWakeUserActivity, WAKE_USER_ACTIVITY_MS);
         }
         // Spec 05 section 6.1: re-read the front app after every screen-on.
         mTracker.requestQuery();
@@ -466,16 +504,21 @@ final class EpdService {
                 // Unconditionally, whatever woke the device (E-ink key, swapped
                 // keys, fingerprint, ...) and whether or not it is marked applied.
                 mEinkOnly.enterAfterScreenOn();
+                mWake.step("E-ink-only setup applied");
                 mBridge.reconnectEink();
+                mWake.step("reconnect requested");
                 mEinkOnly.scheduleScreenOnRepeats();
             } else {
                 applyHardware(target);
+                if (target == EpdSettings.TYPE_MIRROR) mWake.step("reconnect requested (mirror)");
             }
         });
     }
 
     /** ACTION_SCREEN_OFF or onScreenChanged(false). Handler thread. */
     void handleScreenOff() {
+        mWake.stop();
+        mHandler.removeCallbacks(mWakeUserActivity);
         synchronized (mLock) {
             mWakeupLocked = false;
             changeTypeLocked(EpdSettings.TYPE_OFF, false);
@@ -558,8 +601,33 @@ final class EpdService {
         if (mode == mEpdMode) return;
         mEpdMode = mode;
         mHandler.post(() -> {
-            if (mEinkReady) mBridge.setRefreshMode(mode);
+            if (mEinkReady) {
+                mBridge.setRefreshMode(mode);
+                mWake.step("refresh mode " + mode + " written");
+            }
         });
+    }
+
+    /** Settings.System a6l_epd_keyguard_clear of the current user (outside the lock). */
+    private boolean readKeyguardClear() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+                EpdSettings.KEYGUARD_CLEAR, 0, UserHandle.USER_CURRENT) == 1;
+    }
+
+    /**
+     * Spec 02 section 10 item 4c: about 1.5 s after a wake into the E-ink with the
+     * keyguard showing, restart the keyguard's short screen-off timer once, now
+     * that the E-ink has started drawing (handler thread).
+     */
+    private void wakeUserActivity() {
+        final boolean eink;
+        synchronized (mLock) {
+            eink = EpdSettings.isEinkType(mDisplayType);
+        }
+        PowerManager pm = mContext.getSystemService(PowerManager.class);
+        if (!eink || pm == null || !pm.isInteractive()) return;
+        pm.userActivity(SystemClock.uptimeMillis(), PowerManager.USER_ACTIVITY_EVENT_OTHER, 0);
+        mWake.step("user activity (keyguard screen-off timer restarted)");
     }
 
     void setEpdDisplayMode(int mode) {
@@ -614,8 +682,11 @@ final class EpdService {
                 mode = EpdSettings.MODE_SMOOTH;
                 reason = camera;
             } else if (mKeyguardLocked) {
-                mode = EpdSettings.MODE_CLEAR;
-                reason = "rule: E-ink lock screen";
+                // Spec 02 section 10 item 4a: the default mode unless the user
+                // chose the clear mode (a6l_epd_keyguard_clear=1).
+                mode = mKeyguardClear ? EpdSettings.MODE_CLEAR : EpdSettings.MODE_DEFAULT_EINK;
+                reason = "rule: E-ink lock screen (" + (mKeyguardClear ? "clear" : "default")
+                        + " mode)";
             } else if (video != null) {
                 mode = EpdSettings.MODE_SMOOTH;
                 reason = video;
@@ -1141,7 +1212,9 @@ final class EpdService {
             if (mKeepModeFront != null) {
                 pw.println("  keep-mode dialog on top: " + mKeepModeFront);
             }
-            pw.println("  keyguard locked: " + mKeyguardLocked);
+            pw.println("  keyguard locked: " + mKeyguardLocked + ", clear mode on it: "
+                    + mKeyguardClear);
+            pw.println("  " + mWake.dumpState());
             pw.println("  client locks: camera=" + mModeLocks[LOCK_CAMERA]
                     + " video=" + mModeLocks[LOCK_VIDEO]);
             pw.println("  auto switches: camera=" + getOptionLocked(EpdSettings.OPTION_AUTO_CAMERA)

@@ -384,7 +384,7 @@ Spec 05 section 6, with the product decisions recorded in
   | Name | Value | Meaning |
   |---|---|---|
   | `MODE_DEFAULT_EINK` = `MODE_SMOOTH` | 8 | default on the E-ink, "smooth" (no per-app entry); with the stock HWC the steady everyday mode (1 and 2 flash). Stock used 6 |
-  | `MODE_CLEAR` | 3 | "clear" per-app entries and the E-ink lock screen. **Confirmed to take effect on the panel (device test 2026-10-03; spec 05 section 8).** The settings app and the tile read the value from the service, so only this constant changes |
+  | `MODE_CLEAR` | 3 | "clear" per-app entries, and the E-ink lock screen when `a6l_epd_keyguard_clear` is 1. **Confirmed to take effect on the panel (device test 2026-10-03; spec 05 section 8).** The settings app and the tile read the value from the service, so only this constant changes |
   | `MODE_MIRROR` | 0 | LCD in use |
   | `MODE_APP_MIN`..`MODE_MAX` | 1..8 | range accepted by `addAppMode` (stock 1..7; 8 so that the default can be stored explicitly) |
 
@@ -423,7 +423,7 @@ it is left). The first that applies wins:
 | # | Situation | Mode | Reason shown in `dumpsys` |
 |---|---|---|---|
 | 1 | Camera lock: a camera opened by the front app (or by the app a helper follows; an opener that is unknown counts), or a client `lockEpdMode(0, true)`; never while a home app is in front | smooth | `camera lock (...)` |
-| 2 | Keyguard locked while the E-ink is in use (E-ink lock screen) | clear | `rule: E-ink lock screen` |
+| 2 | Keyguard locked while the E-ink is in use (E-ink lock screen) | default (8), or clear if `a6l_epd_keyguard_clear` = 1 | `rule: E-ink lock screen (default mode)` / `(clear mode)` |
 | 3 | Video lock: the front app's uid plays video-like audio, or a client `lockEpdMode(1, true)` | smooth | `video lock (...)` |
 | 4 | Slide one screen (experimental): a finger is dragging in an app with the flag | smooth | `slide one screen: finger dragging` |
 | 5 | Front package `com.hmct.einklauncher` (stock rule) | clear | `rule: E-ink launcher` |
@@ -481,8 +481,36 @@ changed; on every camera, playback, lock, option or slide change; after
 
 At every screen-on the service reads `KeyguardManager.isKeyguardLocked()`
 before applying the type, so a wake-up into the E-ink with the keyguard
-shows the lock screen in the clear mode. The app's mode comes back at
-`ACTION_USER_PRESENT` (or the next query that sees the keyguard gone).
+shows the lock screen in the lock-screen mode: the **default mode (8)**, or
+the clear mode if `Settings.System a6l_epd_keyguard_clear` (current user) is 1
+(switch "Clear mode on the lock screen" under "Lock screen" on the "E-ink"
+page). The default mode is the default because the clear mode made the lock
+screen take more than 5 s to appear after a wake (spec 02 section 10 item 4a).
+The app's mode comes back at `ACTION_USER_PRESENT` (or the next query that
+sees the keyguard gone).
+
+About 1.5 s after a wake into the E-ink (types 2 and 4) with the keyguard
+showing, the service calls `PowerManager.userActivity` once (if the device
+is still awake and on the E-ink), so the keyguard's short screen-off timer
+restarts once the E-ink has started drawing (item 4c). Permission
+`DEVICE_POWER` (signature; uid system passes anyway).
+
+### 8.6a Wake timing log
+
+Each wake into the E-ink is logged step by step (spec 02 section 10 item
+4b), tag `A6lEpdWake`, one line per step, `+<ms> <step>` with the
+milliseconds since the service saw the screen-on broadcast: screen-on seen
+(target type, keyguard), display type set (with the refresh mode and its
+reason), refresh mode written to the bridge (only if it changed), E-ink-only
+setup applied, reconnect requested, each delayed re-application (300, 800,
+1500, 3000 ms) and the user activity. Tracking stops 6 s after the screen-on
+or at the next screen-off. The first frame on the panel cannot be observed by
+the service (the HWC drives the E-ink), so it is not logged. `dumpsys epd`
+shows the number of tracked wakes and the last step.
+
+```sh
+adb logcat -s A6lEpdWake
+```
 
 ### 8.7 Slide one screen (EXPERIMENTAL, off for every app by default)
 
@@ -649,6 +677,7 @@ the file. One map for the whole device (not per user).
 | `a6l_epd_power_key_wake` | System, current | 0 | user (no UI) | section 6.2 |
 | `a6l_epd_default_wake` | System, current | 0 | user (no UI) | section 6.2 |
 | `a6l_epd_eink_key_action` | System, current | 0 | user (no UI) | section 6.2 |
+| `a6l_epd_keyguard_clear` | System, current | 0 | E-ink page | 1 = clear mode on the E-ink lock screen, 0 = default mode (section 8.6) |
 | `a6l_epd_saved_brightness_mode` | System, current | -1 | service | saved `screen_brightness_mode` while E-ink only is applied |
 | `a6l_epd_saved_wake_gesture` | System, current | -1 | service (restore only) | legacy, from older builds |
 | `screen_brightness_mode` | System | - | service | set to manual while E-ink only |
@@ -773,7 +802,7 @@ adb shell service call epd 12 i32 0 i32 0    # back to the LCD
 adb shell ls -l /kdebuginfo/edpd/bitmap.raw  # 2073600 bytes after a draw
 adb logcat -s A6lEpd A6lEpdEinkOnly A6lEpdBridge A6lEpdStatus A6lEpdKey \
     A6lEpdStore A6lEpdForeground A6lEpdFingerUnlock A6lEpdCamera \
-    A6lEpdPlayback A6lEpdSlide A6lEpdTile
+    A6lEpdPlayback A6lEpdSlide A6lEpdTile A6lEpdWake
 ```
 
 Per-app checks (section 8), with the E-ink in use, each read from the
@@ -786,8 +815,9 @@ Per-app checks (section 8), with the E-ink in use, each read from the
   front unchanged ("keep-mode dialog on top");
 - the camera app: `camera lock (camera N open by pkg)`, released when it
   closes; a video playing in the front app: `video lock (...)`;
-- lock the device and wake into the E-ink: `rule: E-ink lock screen` (mode 3)
-  until unlock;
+- lock the device and wake into the E-ink: `rule: E-ink lock screen
+  (default mode)` (mode 8; mode 3 with the "Clear mode on the lock screen"
+  switch) until unlock; `adb logcat -s A6lEpdWake` shows the wake steps;
 - the Quick Settings tile flips the front app; `adb logcat -s A6lEpd` shows
   `addAppMode` / `removeAppMode` with the caller's uid;
 - `adb shell am crash org.a6leink.epd` (or kill the process): after the

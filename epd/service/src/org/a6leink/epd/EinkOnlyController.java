@@ -54,6 +54,7 @@ final class EinkOnlyController {
 
     private boolean mApplied;
     private boolean mObserving;
+    private WakeTimer mWake;
 
     EinkOnlyController(Context context, Handler handler, PropertyBridge bridge) {
         mContext = context;
@@ -68,6 +69,11 @@ final class EinkOnlyController {
                 }
             }
         };
+    }
+
+    /** Wake timing log (spec 02 section 10 item 4b). */
+    void setWakeTimer(WakeTimer wake) {
+        mWake = wake;
     }
 
     boolean isApplied() {
@@ -172,6 +178,7 @@ final class EinkOnlyController {
         if (!mApplied) return;
         mBridge.setFrontTouch(false);
         mBridge.lcdBacklightOff();
+        if (mWake != null) mWake.step("delayed re-application (front touch, backlight)");
     }
 
     /** Bring the LCD backlight back: the display power controller needs a nudge. */

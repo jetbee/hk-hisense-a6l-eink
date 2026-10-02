@@ -103,6 +103,11 @@ public final class EpdSettings {
      * 0 = last used screen (default), 1 = LCD.
      */
     public static final String DEFAULT_WAKE = "a6l_epd_default_wake";
+    /**
+     * Spec 02 section 10 item 4a: refresh mode while the keyguard is showing on
+     * the E-ink. 0 = the default mode (default; faster), 1 = the clear mode.
+     */
+    public static final String KEYGUARD_CLEAR = "a6l_epd_keyguard_clear";
     public static final String ACCELEROMETER_ROTATION_RESTORE = "accelerometer_rotation_restore";
     /** Settings.Secure key restored for upgrades from older builds. */
     public static final String WAKE_GESTURE_ENABLED = "wake_gesture_enabled";

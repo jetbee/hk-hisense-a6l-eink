@@ -367,6 +367,8 @@ Decisions taken for the per-app behaviour in `epd/service` and
     the type change at every screen-on, at user-present and at every front
     query. A locked keyguard while the E-ink is in use (types 2 and 4, so
     also the mirror) gives the clear mode, also for a swipe-only keyguard.
+    *Changed by spec 02 section 10 item 4a (item 81): the default mode unless
+    `a6l_epd_keyguard_clear` is 1.*
     The app's mode returns at `ACTION_USER_PRESENT` or the next query that
     sees the keyguard gone.
 67. **Interface for the own options** (slide flags, the two switches):
@@ -477,4 +479,23 @@ Decisions taken for the per-app behaviour in `epd/service` and
     and pid, so the device log names the source if it still happens.
 80. **Bitmap one commit late** (item 3): noted, not investigated or changed
     here (spec 02 says no change yet).
+81. **Lock screen mode** (spec 02 section 10 item 4a, user decision). While
+    the keyguard is showing on the E-ink the mode is the default (8) unless
+    `Settings.System a6l_epd_keyguard_clear` (current user, default 0) is 1,
+    then the clear mode. Switch "Clear mode on the lock screen" under a new
+    "Lock screen" heading on the service's "E-ink" page (English, Japanese).
+    The service caches the value (re-read at every screen-on and on a change
+    observed for all users) so the evaluation needs no provider call.
+82. **Wake timing log** (item 4b). Tag `A6lEpdWake`, milliseconds since the
+    service saw the screen-on broadcast (the actual power-on moment is not
+    available to the app; the broadcast delay is therefore not included).
+    Steps: screen-on seen, display type set (mode and reason), refresh mode
+    written (only when it changes), E-ink-only setup applied, reconnect
+    requested, each delayed re-application, the user activity. Window 6 s or
+    until screen-off. The first frame is not observable by the service.
+83. **User activity after a locked wake** (item 4c). One
+    `PowerManager.userActivity(now, USER_ACTIVITY_EVENT_OTHER, 0)` 1.5 s
+    after a screen-on into type 2 or 4 with the keyguard showing, skipped if
+    the device is no longer awake or no longer on the E-ink; cancelled by a
+    screen-off. `DEVICE_POWER` (signature) declared for documentation.
 
