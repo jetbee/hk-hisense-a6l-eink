@@ -498,4 +498,19 @@ Decisions taken for the per-app behaviour in `epd/service` and
     after a screen-on into type 2 or 4 with the keyguard showing, skipped if
     the device is no longer awake or no longer on the E-ink; cancelled by a
     screen-off. `DEVICE_POWER` (signature) declared for documentation.
+84. **SurfaceFlinger repaints after a reconnect** (spec 02 section 10 item
+    5). `Repainter` sends transaction 1004 (token
+    `android.ui.ISurfaceComposer`, service `SurfaceFlinger`, synchronous,
+    no reply data read) at +1.2, +2.5 and +4 s after every reconnect: the
+    screen-on into type 4, `applyHardware` for types 4 and 2 (switches,
+    screen-on into the mirror, "E-ink ready" in type 4). A new reconnect
+    restarts the schedule; screen-off and entering the LCD cancel it. A
+    missing service or failed transaction is logged once per process and
+    counted in `dumpsys epd`. Code 1004 is a SurfaceFlinger debug
+    transaction, not a stable API: re-check it for Android 16. SELinux:
+    `surfaceflinger_service` is an `app_api_service` and apps may call
+    surfaceflinger, so no rule was added.
+85. **HWC crash after a fingerprint wake** (spec 02 section 10 item 6):
+    noted only (one SIGSEGV in the stock HWC's E-ink update thread about
+    0.9 s after a fingerprint wake on userdebug-17, cause unknown); no change.
 

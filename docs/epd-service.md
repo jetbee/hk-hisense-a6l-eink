@@ -508,8 +508,21 @@ or at the next screen-off. The first frame on the panel cannot be observed by
 the service (the HWC drives the E-ink), so it is not logged. `dumpsys epd`
 shows the number of tracked wakes and the last step.
 
+Repaint requests (spec 02 section 10 item 5): the first panel update after a
+reconnect is blank and the content otherwise only arrives with
+SurfaceFlinger's next frame (5 to 20 s on a still screen). After every
+reconnect for a wake or a switch into type 2 or 4 (and at "E-ink ready" in
+type 4), the service asks SurfaceFlinger for a full repaint at +1.2 s,
++2.5 s and +4 s: binder transaction 1004 with the interface token
+`android.ui.ISurfaceComposer` on the service `SurfaceFlinger` (allowed for
+uid system). Pending requests are cancelled at a screen-off and when the LCD
+is entered. Each request is a line in the `A6lEpdWake` trace ("repaint n/3
+requested"; a plain line on that tag outside a tracked wake). A missing
+service or a failed transaction is logged once (tag `A6lEpdRepaint`);
+`dumpsys epd` shows the request and failure counts.
+
 ```sh
-adb logcat -s A6lEpdWake
+adb logcat -s A6lEpdWake A6lEpdRepaint
 ```
 
 ### 8.7 Slide one screen (EXPERIMENTAL, off for every app by default)
@@ -802,7 +815,7 @@ adb shell service call epd 12 i32 0 i32 0    # back to the LCD
 adb shell ls -l /kdebuginfo/edpd/bitmap.raw  # 2073600 bytes after a draw
 adb logcat -s A6lEpd A6lEpdEinkOnly A6lEpdBridge A6lEpdStatus A6lEpdKey \
     A6lEpdStore A6lEpdForeground A6lEpdFingerUnlock A6lEpdCamera \
-    A6lEpdPlayback A6lEpdSlide A6lEpdTile A6lEpdWake
+    A6lEpdPlayback A6lEpdSlide A6lEpdTile A6lEpdWake A6lEpdRepaint
 ```
 
 Per-app checks (section 8), with the E-ink in use, each read from the

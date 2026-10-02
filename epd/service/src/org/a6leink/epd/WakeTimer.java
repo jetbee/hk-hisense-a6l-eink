@@ -57,6 +57,15 @@ final class WakeTimer {
         log(what);
     }
 
+    /** Logs a step of the tracked wake, or a plain line on tag {@link #TAG} otherwise. */
+    synchronized void stepOrLog(String what) {
+        if (mStart >= 0 && SystemClock.elapsedRealtime() - mStart <= WINDOW_MS) {
+            log(what);
+        } else {
+            Log.i(TAG, what);
+        }
+    }
+
     private void log(String what) {
         long ms = SystemClock.elapsedRealtime() - mStart;
         mLast = "+" + ms + " ms " + what;

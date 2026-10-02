@@ -126,6 +126,8 @@ final class EpdService {
     private final WakeTimer mWake = new WakeTimer();
     /** Spec 02 section 10 item 4c: one user activity after a locked wake into the E-ink. */
     private final Runnable mWakeUserActivity = this::wakeUserActivity;
+    /** Spec 02 section 10 item 5: SurfaceFlinger repaints after a reconnect. */
+    private final Repainter mRepainter;
     private static final long WAKE_USER_ACTIVITY_MS = 1500;
     private int mWakeupSource = SOURCE_USER;
     private boolean mWakeupLocked;
@@ -146,6 +148,7 @@ final class EpdService {
         mHandler = new Handler(thread.getLooper());
         mEinkOnly = new EinkOnlyController(context, mHandler, mBridge);
         mEinkOnly.setWakeTimer(mWake);
+        mRepainter = new Repainter(mHandler, mWake);
         mWidgets = new SleepWidgetHost(context);
         mStatus = new StatusScreen(context, mHandler, mBridge, mWidgets);
         mStore = new AppModeStore(context);
@@ -422,12 +425,15 @@ final class EpdService {
             case EpdSettings.TYPE_EINK:
                 mEinkOnly.enter();
                 mBridge.reconnectEink();
+                mRepainter.schedule("type 4");
                 break;
             case EpdSettings.TYPE_MIRROR:
                 mEinkOnly.leave();
                 mBridge.reconnectEink();
+                mRepainter.schedule("type 2");
                 break;
             case EpdSettings.TYPE_LCD:
+                mRepainter.cancel(); // leaving the E-ink
                 mEinkOnly.leave();
                 break;
             default:
@@ -507,6 +513,7 @@ final class EpdService {
                 mWake.step("E-ink-only setup applied");
                 mBridge.reconnectEink();
                 mWake.step("reconnect requested");
+                mRepainter.schedule("wake into type 4");
                 mEinkOnly.scheduleScreenOnRepeats();
             } else {
                 applyHardware(target);
@@ -519,6 +526,7 @@ final class EpdService {
     void handleScreenOff() {
         mWake.stop();
         mHandler.removeCallbacks(mWakeUserActivity);
+        mHandler.post(mRepainter::cancel);
         synchronized (mLock) {
             mWakeupLocked = false;
             changeTypeLocked(EpdSettings.TYPE_OFF, false);
@@ -1240,6 +1248,7 @@ final class EpdService {
             pw.println("  camera watcher: " + mCamera.dumpState());
             pw.println("  playback watcher: " + mPlayback.dumpState());
             pw.println("  slide monitor: " + mSlideMonitor.dumpState());
+            pw.println("  " + mRepainter.dumpState());
             mEinkOnly.dump(pw);
             mStatus.dump(pw);
         }, 1000);
