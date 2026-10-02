@@ -13,8 +13,10 @@ Hisense A6L (front 1080x2340 LCD, rear 720x1440 E-ink) for LineageOS 18.1
 
 Everything here was written only from the clean-room specifications
 
-- `01-com.hmct.epd.md` (spec 01: the client library), and
-- `02-epd-service.md` (spec 02: the E-ink service),
+- `01-com.hmct.epd.md` (spec 01: the client library),
+- `02-epd-service.md` (spec 02: the E-ink service), and
+- `03-sleep-screen-stage2.md` (spec 03: widgets and notifications on the
+  sleeping screen),
 
 the Android documentation and AOSP/LineageOS sources. Names, codes and
 values needed for compatibility with stock apps (binder name `epd`, AIDL
@@ -68,7 +70,9 @@ SELinux rules and the rear touch `.idc` file.
   device-protected storage.
 - While the E-ink is not in use it shows a status screen ("sleeping" with
   an analog or digital clock, or "using the LCD"), written as raw RGB565 to
-  `/kdebuginfo/edpd/bitmap.raw` and committed through the bridge.
+  `/kdebuginfo/edpd/bitmap.raw` and committed through the bridge. While
+  sleeping, the user's widgets and notifications are drawn below the clock
+  ([docs/sleep-screen.md](docs/sleep-screen.md)).
 - `dumpsys epd` prints the state; `dumpsys epd status lcd|sleep|stop`
   forces a status screen for testing.
 

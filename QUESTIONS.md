@@ -191,3 +191,71 @@ spec 02's open questions (section 8).
     screen and committed through the same bitmap path
     (`/kdebuginfo/edpd/bitmap.raw`). Presentation pages on the E-ink stay
     deferred. Not implemented yet.
+
+# Open questions (implementation of spec 03, sleep screen stage 2)
+
+Decisions taken for the widgets and notifications of the sleeping screen
+(`epd/service`, documented in `docs/sleep-screen.md`).
+
+38. **Redaction rule.** Spec 03 section 4 reads as "redact when
+    `lock_screen_allow_private_notifications` = 0 *or* the notification is
+    PRIVATE". `Notification.VISIBILITY_PRIVATE` is the Android default, so
+    taken literally nearly every notification would be redacted even with
+    "Show all notification content". Implemented as SystemUI does
+    (`NotificationLockscreenUserManagerImpl.needsRedaction`): redact when the
+    user set the channel/app lock screen visibility to private, or when the
+    notification is PRIVATE and private content is not allowed (setting 0,
+    default 0, or the device admin flag
+    `KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS`). PUBLIC notifications are
+    shown in full. `lock_screen_show_notifications` defaults to 1 as in
+    SystemUI; the admin flag `KEYGUARD_DISABLE_SECURE_NOTIFICATIONS` also
+    hides all. To confirm with the spec author.
+39. **"Silent and minimized".** Skipped: importance below
+    `IMPORTANCE_DEFAULT` (low and min), suspended apps, and notifications
+    Do Not Disturb hides from the list (`SUPPRESSED_EFFECT_NOTIFICATION_LIST`).
+    Group summaries are those with `FLAG_GROUP_SUMMARY` and a group.
+    Notifications for `USER_ALL` count as the current user's.
+40. **Icon.** The item icon is the notification's small icon drawn as a
+    black silhouette (it is designed as one), falling back to the launcher
+    icon thresholded at 50 % luminance. Spec says "app icon"; the small icon
+    is normally the app's and reads better in black and white.
+41. **Hidden items** ("Contents hidden") show app icon and app name only,
+    without the time, as the spec lists.
+42. **Widget sizes.** `size` 0 = provider's `minHeight` (default), 1/2/3 =
+    small/medium/large (160/280/400 px). A widget that does not fit gets the
+    space left if that is at least its `minResizeHeight` (else `minHeight`),
+    otherwise it is skipped. 16 px between widgets, 16 px bottom margin.
+43. **Density.** Widgets are laid out at the phone density and scaled to an
+    assumed 280 dpi for the panel (about 276 ppi). The size reported to the
+    provider (`updateAppWidgetOptions`, on add and on height change only) is
+    in those units (672 px = 384 dp wide).
+44. **Clocks off-screen.** `TextClock.refreshTime()` and, through
+    reflection (allowed for a platform-signed app), `AnalogClock`'s private
+    `onTimeChanged` are called before each draw, because both update only
+    while attached to a window.
+45. **Collection wait.** The widget is waiting while an `AdapterView` has no
+    adapter or a `RemoteViewsAdapter` that is not data-ready, or while the
+    tree requests layout; polled every 100 ms, done after two quiet polls,
+    at most 1 s. A 2 s watchdog on the service thread draws without widgets
+    if the main thread does not answer.
+46. **Failed widgets** are left out and the sections are laid out again, so
+    they leave no hole.
+47. **`BIND_APPWIDGET` is not declared.** uid `system` passes the check, and
+    declaring a privileged permission in a priv-app would need a
+    privapp-permissions allowlist entry. If the device enforces otherwise,
+    add the permission and an allowlist file.
+48. **Users.** Widgets are chosen on the system user only (the service runs
+    there); the settings page says so on other users. The listener is
+    granted for the system user.
+49. **Notification redraw timing.** The 10 s window counts from the last
+    draw of any kind (minute redraws included). The deferred redraw uses an
+    exact `ELAPSED_REALTIME_WAKEUP` alarm; it redraws only if the list still
+    differs from the last draw. The list compared is the full filtered list
+    (key and post time), so updates of a shown notification redraw too.
+50. **High contrast** maps luminance <= 100 to black, >= 156 to white,
+    linear in between. Invert draws the widget on black before converting,
+    so white-on-transparent widgets come out black on white.
+51. **Write errors** of the bitmap file are logged once per process (a boot,
+    for this persistent app); `dumpsys epd` keeps the last one.
+52. **Settings page summary** in Settings > Display now reads "Sleep screen,
+    widgets, notifications and buttons".

@@ -373,8 +373,9 @@ catches a new top activity inside the same task. Granularity is the package.
 
 ## 9. The status screen
 
-Stage 1 of the E-ink "sleep screen". (Stage 2 is described in
-[sleep-screen.md](sleep-screen.md).) Purpose: the E-ink never keeps the last
+Stage 1 of the E-ink "sleep screen": the header. Stage 2 (widgets and
+notifications below the header of the sleeping screen) is described in
+[sleep-screen.md](sleep-screen.md). Purpose: the E-ink never keeps the last
 page or the live mirror of the phone's content while it is not in use; the
 service paints its own picture there.
 
@@ -393,7 +394,10 @@ drawn at once.
 
 Canvas 720 x 1440, white background, black anti-aliased text in the current
 language (English and Japanese strings), each line shrunk to fit its width.
-Everything is in the **top 360 px**; the rest stays white (reserved).
+Everything is in the **top 360 px**. On the sleeping screen, widgets and
+notifications may follow below it ([sleep-screen.md](sleep-screen.md#2-layout));
+without them the rest stays white, and the "Using the LCD" screen never has
+them.
 
 - Sleeping, with clock (`a6l_epd_sleep_clock` = 1, default): a 360 x 360
   square on the left with
@@ -448,8 +452,10 @@ blank the E-ink. The reconnect on the way back to type 2 or 4 undoes it.
 
 **Settings > Display > E-ink** (`StatusScreenSettingsActivity`): "Status
 screen" with "Clock on the sleeping screen" (`a6l_epd_sleep_clock`) and
-"Clock style" Analog / Digital (`a6l_epd_sleep_clock_style`), and "Buttons"
-with "Swap buttons on the E-ink" (`a6l_epd_swap_keys_on_eink`). The page
+"Clock style" Analog / Digital (`a6l_epd_sleep_clock_style`), the
+sleeping screen's "Widgets" and "Notifications" (see
+[sleep-screen.md](sleep-screen.md#6-settings-page)), and "Buttons" with
+"Swap buttons on the E-ink" (`a6l_epd_swap_keys_on_eink`). The page
 writes the settings of the user who opened it. A fuller E-ink settings app
 is described in [eink-settings.md](eink-settings.md).
 
