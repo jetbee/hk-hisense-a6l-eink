@@ -10,7 +10,9 @@ SPDX-License-Identifier: CC-BY-4.0
 > 本書ではプロセス構成、起動時のタイミング制約（「E-ink ready」まで fb1 に触れない理由）、
 > 表示タイプ（-1/0/2/4）と遷移、各状態でハードウェアに適用する内容（sysfs ノードと
 > init プロパティブリッジ）、E-ink キーと電源ボタンの役割（入れ替え設定を含む）、
-> 指ごとの解除画面、永続化と設定キー、権限と SELinux、E-ink のステータス画面
+> 指ごとの解除画面、アプリごとの E-ink 動作（手前のアプリの検出、くっきり/なめらか、
+> カメラと動画の自動切り替え、E-ink のロック画面、試験運用の「1 画面スライド」、
+> クイック設定タイル）、永続化と設定キー、権限と SELinux、E-ink のステータス画面
 > （第 1 段階：表示内容、ビットマップのパスと形式、コミット、更新間隔）、
 > デバイスへの組み込み方法、実機での確認方法（`dumpsys epd` など）、既知の制限を説明します。
 
@@ -20,9 +22,10 @@ The service implements `com.hmct.epd.IEpdManager` (see
 `epd/epd.mk`, `epd/BoardConfigEpd.mk`, framework hooks in `epd/patches/`
 ([patches.md](patches.md)).
 
-Sources: clean-room specs 01 (`01-com.hmct.epd.md`) and 02
-(`02-epd-service.md`, including the product decisions of its section 9), and
-the code in this repository. Decisions on points the specs left open are
+Sources: clean-room specs 01 (`01-com.hmct.epd.md`), 02
+(`02-epd-service.md`, including the product decisions of its section 9) and
+05 (`05-per-app-eink.md`, per-app behaviour, section 8 below), and the code
+in this repository. Decisions on points the specs left open are
 numbered in [`QUESTIONS.md`](../QUESTIONS.md); they are referred to as "Q12"
 etc.
 
@@ -211,6 +214,12 @@ the LCD powers on, and the power manager ramps the backlight up. The service
 therefore switches the front touch and the backlight off again immediately
 and after **300, 800, 1500 and 3000 ms**, as long as E-ink only is still
 applied. A new screen-on or leaving E-ink only cancels pending repetitions.
+Before that, every screen-on into type 4 applies the whole E-ink-only set-up
+of 4.1 again (forced size, touches, brightness mode, observer, backlight) and
+logs "Entering E-ink only (screen on...)", whatever woke the device (E-ink
+key, swapped keys, fingerprint) and even if it is still marked as applied
+from before the screen-off (device test 2026-10-03: an E-ink key wake after a
+sleep from E-ink only left the LCD lit).
 
 ### 4.4 Node reference
 
@@ -352,24 +361,165 @@ user by name ("Finger N" if unnamed) and offers "Keep current screen",
 "Front (LCD)" and "Back (E-ink)" per finger; "Keep current screen" removes
 the entry.
 
-## 8. Refresh mode and the foreground app
+## 8. Refresh mode and per-app behaviour
+
+Spec 05 section 6, with the product decisions recorded in
+[`QUESTIONS.md`](../QUESTIONS.md) (Q53 to Q73; device-test fixes Q74 to Q77). Code: `EpdService`
+(evaluation), `ForegroundTracker`, `AppRules`, `CameraWatcher`,
+`PlaybackWatcher`, `SlideMonitor`, `EinkOptionsProvider`,
+`EinkModeTileService`.
+
+### 8.1 Refresh mode basics
 
 - The current refresh mode is held in memory (starts at 0). A new value is
   written to `fb1/epd_display_mode` only after "E-ink ready". Setting the same
-  value again does nothing. `setEpdDisplayMode` accepts 0..8.
-- Default on the E-ink: **8** (video). With the stock HWC this is the steady
-  everyday mode; 1 (typing) and 2 (picture) flash on each update. Stock used 6.
-- Re-evaluation (types 2 and 4 only): a camera or video lock gives 6; a
-  per-app entry matching the foreground package gives its mode (match = either
-  package string contains the other); otherwise 8.
-- On the LCD (type 0) the mode is set to 0.
+  value again does nothing. `setEpdDisplayMode` accepts 0..8; its value holds
+  until the next evaluation.
+- Named values (`EpdSettings`; no other place in the service writes a number):
+
+  | Name | Value | Meaning |
+  |---|---|---|
+  | `MODE_DEFAULT_EINK` = `MODE_SMOOTH` | 8 | default on the E-ink, "smooth" (no per-app entry); with the stock HWC the steady everyday mode (1 and 2 flash). Stock used 6 |
+  | `MODE_CLEAR` | 3 | "clear" per-app entries and the E-ink lock screen. **Confirmed to take effect on the panel (device test 2026-10-03; spec 05 section 8).** The settings app and the tile read the value from the service, so only this constant changes |
+  | `MODE_MIRROR` | 0 | LCD in use |
+  | `MODE_APP_MIN`..`MODE_MAX` | 1..8 | range accepted by `addAppMode` (stock 1..7; 8 so that the default can be stored explicitly) |
+
 - `forceClear()` writes `fb1/epd_force_clear` after "E-ink ready".
 
-Foreground app: nobody calls `begigResumeActivity` / `notifyResumedPackage`
-on 18.1, so the service registers a task-stack listener with the activity
-task manager. It records the top activity's package when a task moves to the
-front, and after every task-stack change queries the top task, which also
-catches a new top activity inside the same task. Granularity is the package.
+### 8.2 Front app tracking
+
+Nobody calls `begigResumeActivity` / `notifyResumedPackage` on 18.1, so the
+service observes the front itself (spec 05 section 6.1):
+
+- A task-stack listener (`onTaskStackChanged`, `onTaskMovedToFront`,
+  `onTaskFocusChanged`, `onTaskRemoved`, `onTaskDisplayChanged`, PiP
+  pinned/unpinned, docked-stack dismissal, back on a task root). Callbacks only
+  schedule a query: coalesced for 60 ms, plus two late re-queries 350 ms and
+  1200 ms after the last callback (returning to the launcher, recents and
+  activities started from notifications finish after their callbacks).
+- A query reads the **focused root task's top activity** (package, class and
+  user; `getFocusedStackInfo`, so in split screen the focused side), ignoring
+  picture-in-picture; fallback: the topmost non-PiP task.
+- While the E-ink is in use (types 2 and 4) a safety-net poll queries every
+  2 s. A failed listener registration is retried every 2 s.
+- The front is also re-read at every screen-on, at `ACTION_USER_PRESENT` and
+  on every change into an E-ink type. `begigResumeActivity` and
+  `notifyResumedPackage` are accepted as hints that trigger a query.
+- After a restart of the service process, the first query, the camera
+  listener (which reports the cameras already open) and a read of the active
+  audio playback restore the state.
+- `getTopPackage()` returns the observed front package (keep-mode dialogs
+  excluded, see 8.4).
+
+### 8.3 Evaluation
+
+Runs only while the type is 2 or 4 (on 0 the mode is 0; with the screens off
+it is left). The first that applies wins:
+
+| # | Situation | Mode | Reason shown in `dumpsys` |
+|---|---|---|---|
+| 1 | Camera lock: a camera opened by the front app (or by the app a helper follows; an opener that is unknown counts), or a client `lockEpdMode(0, true)`; never while a home app is in front | smooth | `camera lock (...)` |
+| 2 | Keyguard locked while the E-ink is in use (E-ink lock screen) | clear | `rule: E-ink lock screen` |
+| 3 | Video lock: the front app's uid plays video-like audio, or a client `lockEpdMode(1, true)` | smooth | `video lock (...)` |
+| 4 | Slide one screen (experimental): a finger is dragging in an app with the flag | smooth | `slide one screen: finger dragging` |
+| 5 | Front package `com.hmct.einklauncher` (stock rule) | clear | `rule: E-ink launcher` |
+| 6 | Built-in video activities `com.android.gallery3d.app.MovieActivity`, `...TrimVideo` (AOSP Gallery2) | smooth | `rule: built-in video activity` |
+| 7 | Per-app entry: exact package, else an entry equal to the activity class, else the longest entry that contains the package or is contained in it | the entry | `per-app entry 'pkg'`, `activity entry '...'`, `substring entry '...'` |
+| 8 | Helper app (no launcher activity, not home) without a match: the entry of the app that opened it | that entry | `... (helper app, follows pkg)` |
+| 9 | Nothing matched | 8 | `default` |
+
+The camera lock comes before the lock screen because the camera can be used
+over the lock screen; then the camera app is the front app.
+
+When it runs: on every change of the front **package**; on an activity change
+inside the same package only if the old or new activity has an activity rule
+(6 or an activity-class entry); at every screen-on and type change into 2/4;
+at `ACTION_USER_PRESENT` and whenever a query finds the keyguard state
+changed; on every camera, playback, lock, option or slide change; after
+`addAppMode` / `removeAppMode` / `updateEpdMode`.
+
+### 8.4 Fixed rules
+
+- **Keep-mode dialogs**: `com.android.permissioncontroller.permission.ui.GrantPermissionsActivity`,
+  `com.android.internal.app.ChooserActivity` (share sheet) and
+  `com.android.internal.app.ResolverActivity` ("open with"). Nothing changes
+  while one is on top, and it is not recorded as the front app.
+- **Helper apps** follow the app that opened them: a package without a
+  launcher activity that is not the home app (for example the package
+  installer, permission and system UI screens, `android`) uses, when it has no
+  match of its own, the entry of the previous front app (or of that app's host
+  if the previous one was a helper too). Its own entry wins if it has one.
+- **Home rule**: the camera lock never applies while the default home app (or
+  `com.hmct.einklauncher`, `com.hmct.vision`) is in front.
+- **Video activities**: rule 6 above.
+
+### 8.5 Automatic switches (both on by default)
+
+- **Camera** (`CameraWatcher`): `CameraManager.AvailabilityCallback`; a camera
+  id is open while unavailable; the opener's package comes from the hidden
+  `onCameraOpened` callback (permission `CAMERA_OPEN_CLOSE_LISTENER`); the
+  listener is registered at "E-ink ready" (cameraserver is up by then). The lock
+  is released when the camera closes, and at screen-off: cameras open at
+  screen-off no longer lock until closed and opened again. Client locks are
+  also cleared at screen-off (stock).
+- **Video** (`PlaybackWatcher`): `AudioManager.AudioPlaybackCallback`; the
+  service runs as uid system, which AudioService treats as holding
+  `MODIFY_AUDIO_ROUTING`, so the configurations carry the player's uid.
+  Video-like = state started and content type "movie", or a media / game /
+  unknown usage whose content type is not speech, music or sonification. The
+  lock lasts while the front app's uid plays; it ends when playback stops or
+  the app leaves the front.
+- Switches: options `auto_camera` and `auto_video` in the service's own
+  storage (10.1), set from the settings app. Client locks
+  (`lockEpdMode`) work whatever the switches.
+
+### 8.6 E-ink lock screen
+
+At every screen-on the service reads `KeyguardManager.isKeyguardLocked()`
+before applying the type, so a wake-up into the E-ink with the keyguard
+shows the lock screen in the clear mode. The app's mode comes back at
+`ACTION_USER_PRESENT` (or the next query that sees the keyguard gone).
+
+### 8.7 Slide one screen (EXPERIMENTAL, off for every app by default)
+
+Stock suppressed the app's drawing during a drag (a framework feature 18.1
+lacks). The approximation: for an app with the flag, while the E-ink is in
+use and not locked, a gesture monitor on display 0 (`InputManager`
+`monitorGestureInput`, permission `MONITOR_INPUT`; touches still reach the
+app) sees the touches. When a finger moves more than the touch slop, the
+mode becomes smooth; 600 ms after the last finger is lifted (a new touch in
+that time continues the drag) the app's mode comes back; no extra refresh
+follows (spec 05 section 8 decision c: a fast mode only while the finger
+drags). It is useful for apps set to clear; for an app that is already smooth
+it changes nothing. The monitor exists only while needed. If the effect is not
+good enough, a framework change is to be considered separately.
+
+### 8.8 Quick Settings tile
+
+`EinkModeTileService`, label "E-ink: clear/smooth" (Japanese
+"E-ink: くっきり/なめらか"). It shows the stored choice of the front app
+("E-ink: clear" / "E-ink: smooth", the app's name as subtitle) and toggles it:
+smooth → `addAppMode(pkg, MODE_CLEAR)`, clear → `removeAppMode(pkg)`; the
+service re-applies the mode at once and the change is permanent (same map as
+the settings app). Unavailable while the E-ink is not in use, for the home
+app and for this project's own apps. It talks to the `epd` binder, so it also
+works for a secondary user.
+
+### 8.9 Options provider (for the settings app)
+
+`EinkOptionsProvider`, authority `org.a6leink.epd.options`, single-user,
+guarded by the signature permission `org.a6leink.epd.permission.EINK_OPTIONS`
+(checked in `call`). Methods: `get_config` (ints `clear_mode`,
+`smooth_mode`, `min_mode`, `max_mode`; booleans `auto_camera`,
+`auto_video`; string array `slide`), `set_slide` (arg package, boolean extra
+`on`), `set_option` (arg option name, boolean extra `on`). The per-app
+options are not encoded into the `getAllAppMode` value space (spec 05
+section 6.4).
+
+### 8.10 Package removal
+
+On `ACTION_PACKAGE_FULLY_REMOVED`, if the package is installed for no user
+any more, its exact-package entry and slide flag are removed.
 
 ## 9. The status screen
 
@@ -465,14 +615,23 @@ is described in [eink-settings.md](eink-settings.md).
 
 File `epd_app_modes.xml` in the app's **device-protected** files directory
 (readable before the first unlock), written with `AtomicFile` after each
-change. Format, private to this service:
+change. It also holds the service's own per-app options (spec 05 section
+6.4). Format, private to this service:
 
 ```xml
-<app-modes><app package="com.example.reader" mode="3"/></app-modes>
+<app-modes>
+  <app package="com.example.reader" mode="3"/>
+  <slide package="com.example.reader"/>
+  <option name="auto_video" value="0"/>
+</app-modes>
 ```
 
-A missing or unreadable file means an empty map. Apps use `getAllAppMode()`,
-not the file.
+`app`: per-app refresh mode (keys may also be activity class names or
+stock-style substrings); `slide`: slide one screen on; `option`: the
+automatic switches `auto_camera` / `auto_video` (absent = on). Files of
+earlier builds (only `app`) load unchanged. A missing or unreadable file
+means empty data. Apps use `getAllAppMode()` and the options provider, not
+the file. One map for the whole device (not per user).
 
 ### 10.2 Settings keys
 
@@ -514,8 +673,10 @@ wake-up state and locks are memory only.
 | Binder calls | none required (kept as on stock: stock apps call the service without permissions) |
 | `dumpsys epd` | `android.permission.DUMP` |
 | Settings pages | exported, guarded by `android.permission.WRITE_SECURE_SETTINGS` (only system apps such as Settings can open them); injected through the `com.android.settings.action.IA_SETTINGS` filter with categories `com.android.settings.category.ia.display` and `...ia.security` |
-| Manifest `uses-permission` | `RECEIVE_BOOT_COMPLETED`, `USE_BIOMETRIC`, `USE_FINGERPRINT`, `WAKE_LOCK` |
-| Protected broadcast | `com.hmct.action.displaychanged` |
+| Manifest `uses-permission` | `RECEIVE_BOOT_COMPLETED`, `USE_BIOMETRIC`, `USE_FINGERPRINT`, `WAKE_LOCK`; for section 8: `MANAGE_ACTIVITY_STACKS`, `CAMERA_OPEN_CLOSE_LISTENER`, `MONITOR_INPUT` (signature) and `MODIFY_AUDIO_ROUTING` (signature\|privileged, allowlisted in `epd/permissions/privapp-permissions-a6leink.xml`, installed to `system_ext/etc/permissions`). uid system passes all these checks anyway; they are declared to document the use |
+| Own permission | `org.a6leink.epd.permission.EINK_OPTIONS` (signature): options provider (8.9) |
+| Quick Settings tile | `BIND_QUICK_SETTINGS_TILE` on the tile service |
+| Protected broadcasts | `com.hmct.action.displaychanged`, `com.hmct.intent.EINK_KEY_PRESSED` (sent from system_server by the key handler; unprotected it caused a "Sending non-protected broadcast" WTF) |
 
 ### 11.2 System-side policy (this repository)
 
@@ -523,7 +684,7 @@ wake-up state and locks are memory only.
 
 | File | Content |
 |---|---|
-| `a6l_epd.te` | type `a6l_epd_service` (`app_api_service`, `service_manager_type`: any app may find it); `add_service(system_app, a6l_epd_service)`; `system_server` may `find` it (key handler); `system_internal_prop(a6l_epd_prop)`; `set_prop(system_app, a6l_epd_prop)` |
+| `a6l_epd.te` | type `a6l_epd_service` (`app_api_service`, `service_manager_type`: any app may find it); `add_service(system_app, a6l_epd_service)`; `system_server` may `find` it (key handler); `system_internal_prop(a6l_epd_prop)`; `set_prop(system_app, a6l_epd_prop)`; `system_app` may `find` `cameraserver_service` (camera lock, 8.5) |
 | `service_contexts` | `epd` -> `a6l_epd_service` |
 | `property_contexts` | `sys.a6l.epd.` -> `a6l_epd_prop`; `ro.hmct.epd.support` -> `exported_system_prop` (readable by every app) |
 
@@ -545,9 +706,13 @@ Relied on, provided by the device tree:
 1. Put the repository in the source tree, e.g. `vendor/a6l-eink-oss`.
 2. Product makefile:
    `$(call inherit-product, vendor/a6l-eink-oss/epd/epd.mk)`.
-   `epd.mk` adds the packages `com.hmct.epd` and `A6lEinkService`, puts
-   `com.hmct.epd` in `PRODUCT_BOOT_JARS`, copies the bridge rc file to
-   `system/etc/init/init.a6l.epd.rc`, adds the overlay
+   `epd.mk` adds the packages `com.hmct.epd`, `A6lEinkService` and
+   `A6lEinkSettings`, puts `com.hmct.epd` in `PRODUCT_BOOT_JARS`, copies the
+   bridge rc file to `system/etc/init/init.a6l.epd.rc` and the privileged
+   permission allowlist to
+   `system_ext/etc/permissions/privapp-permissions-a6leink.xml` (without it a
+   device with `ro.control_privapp_permissions=enforce` does not boot), adds
+   the overlay
    (`PRODUCT_PACKAGE_OVERLAYS`) and sets `ro.hmct.epd.support=1`
    (`PRODUCT_SYSTEM_EXT_PROPERTIES`).
 3. `BoardConfig.mk`:
@@ -571,8 +736,13 @@ adb shell dumpsys epd
 ```
 
 prints: display type, previous and last screen-on type; "e-ink ready" and
-whether it is scheduled; display-enabled flags; refresh mode and the camera
-and video locks; top package; wake-up source, lock and wake-up display; theme,
+whether it is scheduled; display-enabled flags; refresh mode (with the smooth
+and clear values), **why** (mode reason) and the last trigger; top package;
+the front package/activity/user/uid with home, helper and the followed host;
+a keep-mode dialog on top; keyguard; client locks; the automatic switches;
+locking cameras and video uids; slide flags and drag state; the fixed rules;
+the foreground tracker, camera, playback and slide monitor state; wake-up
+source, lock and wake-up display; theme,
 keyguard and gesture values and whether `finishBoot` was called; tuning
 values; per-app modes; whether E-ink only is applied and the brightness
 observer is active; status screen state (sleeping / lcd / none, "forced",
@@ -598,8 +768,26 @@ adb shell service call epd 12 i32 4 i32 0    # setDisplayType(4, false)
 adb shell service call epd 12 i32 0 i32 0    # back to the LCD
 adb shell ls -l /kdebuginfo/edpd/bitmap.raw  # 2073600 bytes after a draw
 adb logcat -s A6lEpd A6lEpdEinkOnly A6lEpdBridge A6lEpdStatus A6lEpdKey \
-    A6lEpdStore A6lEpdForeground A6lEpdFingerUnlock
+    A6lEpdStore A6lEpdForeground A6lEpdFingerUnlock A6lEpdCamera \
+    A6lEpdPlayback A6lEpdSlide A6lEpdTile
 ```
+
+Per-app checks (section 8), with the E-ink in use, each read from the
+"refresh mode", "mode reason" and "front" lines of `dumpsys epd`:
+
+- open an app set to clear: mode 3, `per-app entry 'pkg'`; go home, to
+  recents, back from a notification, into split screen: the front line and
+  the mode follow within about a second;
+- a runtime permission dialog or the share sheet over that app: mode and
+  front unchanged ("keep-mode dialog on top");
+- the camera app: `camera lock (camera N open by pkg)`, released when it
+  closes; a video playing in the front app: `video lock (...)`;
+- lock the device and wake into the E-ink: `rule: E-ink lock screen` (mode 3)
+  until unlock;
+- the Quick Settings tile flips the front app; `adb logcat -s A6lEpd` shows
+  `addAppMode` / `removeAppMode` with the caller's uid;
+- `adb shell am crash org.a6leink.epd` (or kill the process): after the
+  restart the front, keyguard, camera and playback state are back.
 
 `A6lEpdKey` logs come from system_server. Things to check after a change:
 no boot loop (nothing touches `fb1` before "E-ink ready"); the E-ink shows
@@ -619,12 +807,17 @@ backlight stay off after waking to the E-ink.
 - **The E-ink is a mirror of display 0**, not an independent display; E-ink
   only darkens and disables the LCD and resizes display 0 to 1080 x 2160.
 - **Refresh-mode values at the node**: the `EPD_MODE_*` number is written
-  directly to `fb1/epd_display_mode`. 8 is steady and 1/2 flash; what 0, 3
-  and 6 do at the node was not established. Mode 0 is written whenever the LCD
+  directly to `fb1/epd_display_mode`. 8 is steady, 1/2 flash and 3 is visibly
+  clearer with stuttering scrolling (device test 2026-10-03); what 0 and 6 do
+  at the node was not established. Mode 0 is written whenever the LCD
   is in use.
-- **Per-app mode 8 cannot be stored**: `addAppMode` accepts 1..7 (stock rule),
-  although 8 is the default on the E-ink.
-- **Camera/video locks** work but nothing on 18.1 calls `lockEpdMode`.
+- **Per-app behaviour** (section 8), to verify on the device: whether the torch makes a camera unavailable (spec 05 open
+  question 7; the torch app is usually not in front, so decision b mostly
+  hides it); which video players the audio heuristic catches; how the slide
+  approximation looks; a camera that stays open across a screen-off does not
+  lock again until reopened.
+- **Locks force the smooth mode (8)**, not 6 as on stock (the effect of 6 at
+  the node is unknown).
 - **Not implemented**: rear-touch gestures (`/sys/ctp1/ctp_func/gesture`,
   not wanted), the call restriction of `setDisplayType`,
   `com.hmct.action.reading.timeout`, E-ink key double and long press,
@@ -639,8 +832,10 @@ backlight stay off after waking to the E-ink.
 - **Display manager view after blanking**: after the "Using the LCD" screen,
   the display manager still believes display 1 is on until the next
   screen-off; side effects were not studied beyond "the reconnect undoes it".
-- **Foreground tracking** is per package; per-activity refresh modes are not
-  possible.
+- **Foreground tracking** sees the focused task's top activity after task
+  stack changes (and every 2 s while the E-ink is in use); an activity change
+  inside a task that causes no task-stack callback is seen by the poll.
+  Activities on other displays are not considered.
 - **Android 16**: several calls the service uses are hidden APIs that moved or
   changed after Android 11 (for example the physical-display calls of
   `SurfaceControl`, task listing), and boot-jar and framework patch

@@ -14,9 +14,11 @@ Hisense A6L (front 1080x2340 LCD, rear 720x1440 E-ink) for LineageOS 18.1
 Everything here was written only from the clean-room specifications
 
 - `01-com.hmct.epd.md` (spec 01: the client library),
-- `02-epd-service.md` (spec 02: the E-ink service), and
+- `02-epd-service.md` (spec 02: the E-ink service),
 - `03-sleep-screen-stage2.md` (spec 03: widgets and notifications on the
   sleeping screen),
+- `04-eink-settings.md` (spec 04: the E-ink settings app), and
+- `05-per-app-eink.md` (spec 05: per-app E-ink behaviour),
 
 the Android documentation and AOSP/LineageOS sources. Names, codes and
 values needed for compatibility with stock apps (binder name `epd`, AIDL
@@ -30,11 +32,13 @@ are in [`QUESTIONS.md`](QUESTIONS.md).
 | Path | Content |
 |---|---|
 | `epd/framework/` | `com.hmct.epd` boot jar: `EpdManager`, `IEpdManager`, `IDirectionDetect` (spec 01). See its README |
-| `epd/service/` | `A6lEinkService` app (package `org.a6leink.epd`): the `epd` binder service, the E-ink key handler and two settings pages (spec 02) |
+| `epd/service/` | `A6lEinkService` app (package `org.a6leink.epd`): the `epd` binder service, the E-ink key handler, two settings pages (spec 02), per-app E-ink behaviour and the Quick Settings tile "E-ink: clear/smooth" (spec 05) |
+| `epd/settings/` | `A6lEinkSettings` app (package `org.a6leink.settings`): per-app display mode and options, automatic switching, E-ink tuning (specs 04, 05) |
+| `epd/permissions/` | privileged-permission allowlist of the service app (`MODIFY_AUDIO_ROUTING`, spec 05) |
 | `epd/rootdir/etc/init.a6l.epd.rc` | init property bridge: `sys.a6l.epd.*` properties to sysfs writes (spec 02 section 1.4) |
 | `epd/sepolicy/private/` | system-side policy: `epd` service type, bridge property type (spec 02 section 1.3) |
 | `epd/overlay/` | lineage-sdk overlay loading `org.a6leink.epd.EpdKeyHandler` into system_server (spec 02 section 5.1) |
-| `epd/epd.mk` | product fragment: packages, boot jar, rc file, overlay, `ro.hmct.epd.support=1` |
+| `epd/epd.mk` | product fragment: packages, boot jar, rc file, privapp allowlist, overlay, `ro.hmct.epd.support=1` |
 | `epd/BoardConfigEpd.mk` | board fragment: `BOARD_PLAT_PRIVATE_SEPOLICY_DIR` |
 | `epd/patches/frameworks_base/` | frameworks/base patches: `getSystemService("epd")` registration and the keyguard per-finger unlock screen (spec 02 sections 5.2, 5.3); `epd/patches/apply.sh` applies them |
 
@@ -66,8 +70,13 @@ SELinux rules and the rear touch `.idc` file.
   `Settings.System current_display_type` and `com.hmct.action.displaychanged`.
 - No `fb1` node is written before "E-ink ready" (5 s after boot completion),
   because that crashes the stock HWC.
-- Refresh mode per foreground app (default 8 on the E-ink), persisted in
-  device-protected storage.
+- Refresh mode per front app (smooth = default 8, clear = an entry),
+  persisted in device-protected storage; the front app and activity come
+  from a task-stack listener. Camera and video automatically switch the
+  front app to smooth, the E-ink lock screen is clear, "slide one screen" is
+  an experimental per-app option, and a Quick Settings tile flips the front
+  app. `dumpsys epd` says why the current mode was chosen
+  ([docs/epd-service.md](docs/epd-service.md#8-refresh-mode-and-per-app-behaviour)).
 - While the E-ink is not in use it shows a status screen ("sleeping" with
   an analog or digital clock, or "using the LCD"), written as raw RGB565 to
   `/kdebuginfo/edpd/bitmap.raw` and committed through the bridge. While

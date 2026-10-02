@@ -84,6 +84,8 @@ spec 02's open questions (section 8).
     mode 6 while a lock is on) and, as on stock, all locks are cleared when
     the type becomes -1. The service does not observe the camera or video
     playback itself (nobody calls `lockEpdMode` on 18.1).
+    *Superseded by spec 05 (items 63 to 65): the service observes the camera
+    and video playback itself, and locks force the smooth mode (8).*
 16. **Gesture node and unlock-style settings** [10]. *Settled by spec 02
     section 9.3: rear touch gestures are not wanted.* Not implemented:
     `setEinkThemeMode`, `setEinkKeyguardMode` and `setGestureUnlock` store
@@ -95,6 +97,8 @@ spec 02's open questions (section 8).
     a query of the top task (`getTasks(1)`) on every `onTaskStackChanged`,
     which also sees a new top activity inside the same task. Still package
     granularity; no per-activity modes.
+    *Superseded by spec 05 (item 54): package and activity of the focused
+    task, with per-activity rules.*
 18. **Presentation slots and shutdown picture** [12]. *Deferred by spec 02
     section 9.4; see item 37.* Not implemented; the
     slot methods are accepted and ignored. The status screen uses the same
@@ -259,3 +263,195 @@ Decisions taken for the widgets and notifications of the sleeping screen
     for this persistent app); `dumpsys epd` keeps the last one.
 52. **Settings page summary** in Settings > Display now reads "Sleep screen,
     widgets, notifications and buttons".
+
+# Open questions (implementation of spec 05, per-app E-ink behaviour)
+
+Decisions taken for the per-app behaviour in `epd/service` and
+`epd/settings` (documented in `docs/epd-service.md` section 8 and
+`docs/eink-settings.md`). The user calls per-app settings a must-have.
+
+53. **Product decisions (decided by the user, spec 05 section 8,
+    2026-10-03; final).** (a) Automatic
+    video switch: new on 18.1, a setting, on by default. (b) Camera switch:
+    only while the app using the camera is in front, a setting, on by
+    default. (c) "Slide one screen": the framework-free approximation of
+    spec 05 section 6.3, per app, off by default for every app, marked
+    experimental in the UI and the docs. (d) No separate input method for
+    the E-ink. (e) One device-wide map (keyed by package, not per user).
+54. **Front app tracking.** Task-stack listener (`onTaskStackChanged`,
+    `onTaskMovedToFront`, `onTaskFocusChanged`, `onTaskRemoved`,
+    `onTaskDisplayChanged`, PiP, docked-stack dismissal, back on task root);
+    each burst is coalesced for 60 ms and followed by re-queries at 350 ms and
+    1200 ms; the query is `getFocusedStackInfo()` (focused side in split
+    screen; PiP ignored), falling back to the topmost non-PiP task. While the
+    E-ink is in use a 2 s poll is a safety net; the listener registration is
+    retried; screen-on, user-present and every change into an E-ink type
+    re-query. `begigResumeActivity` / `notifyResumedPackage` only trigger a
+    query. All state is re-read when the process restarts (front, keyguard,
+    cameras via the listener's initial report, active playback).
+55. **Evaluation order.** Spec 05 section 6.2 puts the lock screen first.
+    Implemented: camera lock, lock screen, video lock, slide drag, fixed
+    rules, per-app entry, helper host, default. The camera lock goes first
+    because with decision (b) it only applies while the camera app is in
+    front, which over a locked device means the camera occludes the lock
+    screen (secure camera); the viewfinder should be smooth.
+56. **Matching** (as decided): exact package, then an entry equal to the
+    activity class name, then the longest entry that contains the package or
+    is contained in it (ties: lexicographically smallest key), so the result
+    no longer depends on hash map order. Consequence: an activity-class entry
+    only applies when its package has no entry of its own. Spec 05 section
+    6.2 lists a per-activity override *before* the per-app entry; if
+    activity entries should override their package, swap the first two steps
+    in `AppRules.match`. Question for the user.
+57. **When the per-app mode is re-applied.** On a change of the front
+    package; on an activity change inside the same package only when the old
+    or new activity has an activity rule (built-in video activity or an
+    activity-class entry), as stock did for its fast activities. Everything
+    else (screen-on, type change, keyguard, locks, options, slide, map
+    changes, `updateEpdMode`) evaluates fully. Setting the current mode again
+    is a no-op, so repeated evaluations write nothing.
+58. **Keep-mode dialogs.** The two of spec 05 (18.1 names: permission
+    controller `GrantPermissionsActivity`, `ChooserActivity`) plus
+    `com.android.internal.app.ResolverActivity` ("open with"), own addition:
+    the same kind of dialog over the app. They are not recorded as the front
+    app, so `getTopPackage()` and the tile keep the app underneath.
+59. **Helper apps.** Generalised from the stock list: a package with no
+    launcher activity (in the front user) that is not the home app is a
+    helper. Without a match of its own it follows the previous front app
+    (or that app's host when the previous one was a helper too). The host is
+    forgotten when a non-helper comes to the front (stock kept it until
+    reboot, spec 05 open question 6). The launcher-activity answer is cached
+    per user and package and dropped on every package broadcast.
+60. **Built-in video activities.** No stock names are shipped. The list has
+    AOSP Gallery2's `com.android.gallery3d.app.MovieActivity` and
+    `com.android.gallery3d.app.TrimVideo` (the latter is also on the stock
+    list; it is an AOSP class name). Smooth while on top, even if the package
+    is set to clear.
+61. **E-ink launcher rule** (`com.hmct.einklauncher` always clear) is kept:
+    a compatibility fact, harmless when the package is absent.
+62. **Home rule.** "Home" = the default home activity of the front user
+    (`resolveActivityAsUser`), plus the stock `com.hmct.einklauncher` and
+    `com.hmct.vision`. While home is in front no camera lock applies,
+    including a client `lockEpdMode(0, true)` (stock ignored the camera lock
+    for home apps too).
+63. **Camera lock.** Cameras count as open while unavailable
+    (`AvailabilityCallback`); the opener package comes from the hidden
+    `onCameraOpened`. The lock applies while an open camera's opener is the
+    front package (or the host a helper follows). An unknown opener (cameras
+    already open when the service started) counts as the front app. At
+    screen-off the lock is released as decided: cameras open at that moment
+    are ignored until they are closed (a new open locks again); client locks
+    are cleared as on stock. Reference-counted by camera id. The torch
+    question (spec 05 open question 7) is mostly hidden by decision (b)
+    (the torch is switched from the shade, the front app does not open it),
+    still to check on the device.
+64. **Video lock.** `AudioPlaybackCallback`; uid system is treated by
+    AudioService as holding `MODIFY_AUDIO_ROUTING`, so player uids are not
+    anonymised. "Video-like" (heuristic, own decision): state started and
+    content type movie; or usage media, game or unknown with a content type
+    other than speech, music or sonification. So reading apps that read
+    aloud (speech) and music players stay in their mode; games with sound and
+    most video players (which often leave the content type unknown) switch.
+    Only the front app's own uid counts. To check on the device with the
+    usual players and browsers.
+65. **Mode values.** `EpdSettings.MODE_SMOOTH` = `MODE_DEFAULT_EINK` = 8 (no
+    entry); `EpdSettings.MODE_CLEAR` = 3, the single constant for "clear"
+    (per-app entries, lock screen, E-ink launcher rule), confirmed on the
+    panel by the device test of 2026-10-03 (spec 05 section 8: visibly
+    clearer, scrolling stutters); the settings app and the tile get it from
+    the service.
+    Locks and the slide drag force `MODE_SMOOTH` (8), not 6 as on stock and
+    in the earlier item 15, because 6 is unmeasured at the node. `addAppMode`
+    accepts 1..8 (stock 1..7; 8 so the default can be stored explicitly; an
+    explicit 8 is shown as smooth); `setEpdDisplayMode` keeps 0..8.
+66. **E-ink lock screen.** `KeyguardManager.isKeyguardLocked()` read before
+    the type change at every screen-on, at user-present and at every front
+    query. A locked keyguard while the E-ink is in use (types 2 and 4, so
+    also the mirror) gives the clear mode, also for a swipe-only keyguard.
+    The app's mode returns at `ACTION_USER_PRESENT` or the next query that
+    sees the keyguard gone.
+67. **Interface for the own options** (slide flags, the two switches):
+    a `ContentProvider` in the service app (`call` only, authority
+    `org.a6leink.epd.options`, `singleUser`, signature permission
+    `org.a6leink.epd.permission.EINK_OPTIONS` checked in `call`), stored in
+    the same device-protected file as the map. Chosen over a second binder
+    service because it needs no `service_contexts`/SELinux change and no
+    AIDL shared by two APKs. Not encoded into the `getAllAppMode` values
+    (spec 05 section 6.4).
+68. **Slide one screen approximation.** Gesture monitor on display 0
+    (touches still reach the app), only while the front app (or its host)
+    has the flag, the E-ink is in use and not locked. Drag = movement beyond
+    the system touch slop; end = 600 ms after the last finger-up without a
+    new touch; at the end the app's mode is re-applied, nothing else (spec
+    05 section 8 decision c: a fast mode only while the finger drags; an
+    extra ghost-clearing refresh per drag, which spec 05 section 6.3 offers
+    as optional, was left out because it flashes the panel). The rear
+    touch is assumed to feed display 0 (spec 02 section 2.3); to check on
+    the device.
+69. **Quick Settings tile** in the service app (it already knows the clear
+    value and talks to `epd` directly; works for secondary users through the
+    binder). It toggles the exact-package entry of `getTopPackage()`;
+    unavailable on the LCD, for the home app and for `org.a6leink.*`. It
+    shows the stored choice, not the effective mode (a lock may override it
+    for a while).
+70. **Package removal.** On `ACTION_PACKAGE_FULLY_REMOVED` the exact-package
+    entry and slide flag are dropped when the package is installed for no
+    user (the map is device-wide). Activity or substring keys are kept.
+71. **Permissions.** Declared in the service manifest:
+    `MANAGE_ACTIVITY_STACKS`, `CAMERA_OPEN_CLOSE_LISTENER`, `MONITOR_INPUT`
+    (signature, no allowlist needed) and `MODIFY_AUDIO_ROUTING`
+    (signature|privileged in frameworks/base `core/res/AndroidManifest.xml`).
+    A platform-signed priv-app still needs an allowlist entry for a
+    privileged permission (PermissionManagerService checks the allowlist
+    before the signature), so `epd/permissions/privapp-permissions-a6leink.xml`
+    is installed to `system_ext/etc/permissions` by `epd.mk`. uid system
+    passes all four checks without declaring them; they are declared to
+    document the use. The settings app requests
+    `org.a6leink.epd.permission.EINK_OPTIONS` (signature, granted).
+72. **SELinux.** `system_app` may not find `cameraserver_service` in the 18.1
+    platform policy; `epd/sepolicy/private/a6l_epd.te` allows it (needed by
+    the camera listener). Everything else (activity task, audio, input
+    services, binder calls back from cameraserver) is already allowed for
+    apps.
+73. **Settings app UI.** The row switch flips smooth/clear; tapping the row
+    opens a dialog with the mode (a custom stored value is kept unless
+    Smooth is picked) and "Slide one screen (experimental)". The automatic
+    switches are on the "E-ink apps & tuning" page. Only exact-package
+    entries are listed (activity or substring keys from other tools are
+    applied but not shown).
+
+## Device test of 2026-10-03 (userdebug-14), fixed with spec 05
+
+74. **E-ink-only set-up after a screen-on** (spec 02 sections 2.3, 2.4). A
+    wake with the E-ink key straight into type 4 (also with the button swap,
+    and some fingerprint wakes) logged "Display type -1 -> 4 (screen on)" but
+    not "Entering E-ink only": the set-up was still marked as applied from
+    before the screen-off, so `enter()` did nothing and only the front-touch
+    and backlight repeats ran; the LCD stayed lit. Now every screen-on into
+    type 4 applies the whole set-up again (forced 1080x2160 size, front touch
+    off, rear touch on, manual brightness with the saved mode kept,
+    brightness observer, backlight off), logs it, reconnects the E-ink and
+    schedules the repeats, whatever the wake reason. The swap path (E-ink key
+    sleeps on the E-ink, E-ink key wakes) goes through the same screen-on
+    handling: the key handler only records the wake-up display and wakes.
+75. **`com.hmct.intent.EINK_KEY_PRESSED`** is sent from system_server, which
+    triggered "Sending non-protected broadcast". Spec 02 section 5.1 allows
+    sending it; it is now declared `<protected-broadcast>` in the service's
+    manifest (privileged system app), next to `com.hmct.action.displaychanged`.
+76. **"oneway ... UNKNOWN_TRANSACTION" in org.a6leink.epd.** No call of this
+    project uses a wrong descriptor or a code outside `IEpdManager` 1..43.
+    The log is what IPCThreadState prints when a one-way transaction is not
+    claimed by a Java binder; the likely source is the "system properties
+    changed" poke (`SYSPROPS_TRANSACTION`, `_SPR`), which the activity
+    manager forwards one-way to every app process (the framework's own
+    application thread does not claim it either, so every app logs this) and
+    tools can send to services. The `epd` binder now claims that code (the
+    native layer already handles it), so it no longer logs for `epd`; the
+    same line from the app's application thread is framework behaviour.
+77. **Per-app map empty after a change.** The user had set the app back to
+    smooth, so not a bug. Hardened anyway: the file is read before anything
+    can write it (client calls that arrive before the load are kept in memory
+    and win over the file; the file is written only after the load), the
+    load is logged with its counts, and each `addAppMode` / `removeAppMode`
+    that changes the map is logged with the caller's uid.
+
