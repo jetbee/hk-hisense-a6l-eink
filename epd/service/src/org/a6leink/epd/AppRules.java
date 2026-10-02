@@ -90,20 +90,21 @@ final class AppRules {
     }
 
     /**
-     * Matching of spec 05 section 6.2 (product decision): an entry equal to
-     * the package; else an entry equal to the activity class name; else, for
+     * Matching of spec 05 section 6.2: an entry equal to the activity class
+     * name (more specific, so it overrides the package's entry); else an entry
+     * equal to the package; else, for
      * stock-style keys, the longest entry that contains the package or is
      * contained in it (ties broken by the key's natural order, so the result
      * never depends on map iteration order). Null if nothing matches.
      */
     static Match match(Map<String, Integer> modes, String pkg, String cls) {
         if (pkg == null || pkg.isEmpty()) return null;
-        Integer exact = modes.get(pkg);
-        if (exact != null) return new Match(pkg, exact, Match.EXACT);
         if (cls != null && !cls.isEmpty()) {
             Integer activity = modes.get(cls);
             if (activity != null) return new Match(cls, activity, Match.ACTIVITY);
         }
+        Integer exact = modes.get(pkg);
+        if (exact != null) return new Match(pkg, exact, Match.EXACT);
         String best = null;
         for (String key : modes.keySet()) {
             if (key == null || key.isEmpty()) continue;

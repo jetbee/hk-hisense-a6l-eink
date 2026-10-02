@@ -424,7 +424,7 @@ it is left). The first that applies wins:
 | 4 | Slide one screen (experimental): a finger is dragging in an app with the flag | smooth | `slide one screen: finger dragging` |
 | 5 | Front package `com.hmct.einklauncher` (stock rule) | clear | `rule: E-ink launcher` |
 | 6 | Built-in video activities `com.android.gallery3d.app.MovieActivity`, `...TrimVideo` (AOSP Gallery2) | smooth | `rule: built-in video activity` |
-| 7 | Per-app entry: exact package, else an entry equal to the activity class, else the longest entry that contains the package or is contained in it | the entry | `per-app entry 'pkg'`, `activity entry '...'`, `substring entry '...'` |
+| 7 | Per-app entry: an entry equal to the activity class (overrides the package's entry), else the exact package, else the longest entry that contains the package or is contained in it | the entry | `per-app entry 'pkg'`, `activity entry '...'`, `substring entry '...'` |
 | 8 | Helper app (no launcher activity, not home) without a match: the entry of the app that opened it | that entry | `... (helper app, follows pkg)` |
 | 9 | Nothing matched | 8 | `default` |
 

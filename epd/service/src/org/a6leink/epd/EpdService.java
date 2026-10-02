@@ -566,7 +566,7 @@ final class EpdService {
      * product decisions recorded in QUESTIONS.md), from strongest to weakest:
      * camera lock; E-ink lock screen; video lock; slide-one-screen drag; fixed
      * rules (E-ink launcher, built-in video activities); the per-app entry of
-     * the front app (exact package, activity class, longest substring); for a
+     * the front app (activity class, exact package, longest substring); for a
      * helper app without one, the entry of the app that opened it; the default.
      * Keep-mode dialogs never get here (they are not recorded as the front).
      * On the LCD the mode is 0 (mirror); with the screens off it is left.

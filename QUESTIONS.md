@@ -295,14 +295,11 @@ Decisions taken for the per-app behaviour in `epd/service` and
     because with decision (b) it only applies while the camera app is in
     front, which over a locked device means the camera occludes the lock
     screen (secure camera); the viewfinder should be smooth.
-56. **Matching** (as decided): exact package, then an entry equal to the
-    activity class name, then the longest entry that contains the package or
-    is contained in it (ties: lexicographically smallest key), so the result
-    no longer depends on hash map order. Consequence: an activity-class entry
-    only applies when its package has no entry of its own. Spec 05 section
-    6.2 lists a per-activity override *before* the per-app entry; if
-    activity entries should override their package, swap the first two steps
-    in `AppRules.match`. Question for the user.
+56. **Matching** (spec 05 section 6.2, confirmed by the user): an entry
+    equal to the activity class name first (more specific, it overrides its
+    package's entry), then the exact package, then the longest entry that
+    contains the package or is contained in it (ties: lexicographically
+    smallest key), so the result no longer depends on hash map order.
 57. **When the per-app mode is re-applied.** On a change of the front
     package; on an activity change inside the same package only when the old
     or new activity has an activity rule (built-in video activity or an
@@ -344,7 +341,9 @@ Decisions taken for the per-app behaviour in `epd/service` and
     are cleared as on stock. Reference-counted by camera id. The torch
     question (spec 05 open question 7) is mostly hidden by decision (b)
     (the torch is switched from the shade, the front app does not open it),
-    still to check on the device.
+    still to check on the device. Known limit (accepted): a camera kept open
+    across a screen-off does not lock again after the screen-on until it is
+    closed and reopened.
 64. **Video lock.** `AudioPlaybackCallback`; uid system is treated by
     AudioService as holding `MODIFY_AUDIO_ROUTING`, so player uids are not
     anonymised. "Video-like" (heuristic, own decision): state started and
