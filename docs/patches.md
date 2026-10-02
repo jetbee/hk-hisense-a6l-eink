@@ -6,19 +6,21 @@ SPDX-License-Identifier: CC-BY-4.0
 # frameworks/base patches
 
 > **概要（日本語）** `epd/patches/frameworks_base/` には LineageOS 18.1 の frameworks/base
-> に当てる 2 つのパッチがあります。0001 は `getSystemService("epd")` で `EpdManager` を
+> に当てる 3 つのパッチがあります。0001 は `getSystemService("epd")` で `EpdManager` を
 > 返すようにシステムサービスレジストリへ登録するもの、0002 は SystemUI のキーガードで
-> 指紋認証成功時に指ごとの解除画面（LCD／E-ink）を E-ink サービスへ伝えるものです。
+> 指紋認証成功時に指ごとの解除画面（LCD／E-ink）を E-ink サービスへ伝えるもの、
+> 0003 はロック中に E-ink へキーガード用プレゼンテーションを出さず、E-ink が
+> 通常画面（キーガードと PIN パッド）のミラーを続けるようにするものです。
 > 本書では各パッチの変更内容と理由、適用方法、そして Android 16 へ移植する際に
 > やり直す必要がある点を説明します。
 
-Two patches, made against frameworks/base of LineageOS 18.1 (Android 11).
+Three patches, made against frameworks/base of LineageOS 18.1 (Android 11).
 They are the only changes this project makes outside its own directory; the
 rest of the E-ink stack is an app, a boot jar, an rc file, policy and an
 overlay ([epd-service.md](epd-service.md)).
 
 Sources: clean-room specs 01 (`01-com.hmct.epd.md`, section 1) and 02
-(`02-epd-service.md`, sections 5.2 and 5.3), and the patches themselves.
+(`02-epd-service.md`, sections 5.2, 5.3 and 10), and the patches themselves.
 
 The patches carry their own licence note (Apache-2.0 for the added code); the
 patched files keep their own headers.
@@ -99,6 +101,33 @@ call in the interactive case is this project's addition (stock did nothing
 there). The service then wakes to, or switches to, that panel
 ([epd-service.md](epd-service.md#7-per-finger-unlock-screen)).
 
+## 2a. 0003: no keyguard presentation on the E-ink
+
+File: `0003-Keyguard-no-keyguard-presentation-on-the-A6L-E-ink-display.patch`
+(SystemUI, `packages/SystemUI/src/com/android/keyguard/KeyguardDisplayManager.java`,
+10 added lines).
+
+**What.** `isKeyguardShowable(Display)` returns false for a display of type
+`Display.TYPE_EXTERNAL` when the system property `ro.hmct.epd.support` is
+`"1"` (set by `epd.mk`, label `exported_system_prop`, readable by SystemUI).
+The default display, private displays and every other display type keep
+the AOSP behaviour; on devices without the property nothing changes.
+
+**Why** (spec 02 section 10 item 1, device finding of 2026-10-03). The
+E-ink is reported as an external display (`FLAG_PRESENTATION`,
+`FLAG_SECURE`) that the stock HWC fills with a mirror of the default display.
+While the keyguard is showing, `KeyguardDisplayManager` puts its keyguard
+presentation (a clock) on every non-default, non-private display; display 1
+then stops mirroring and receives no normal frames, so switching or waking
+to the E-ink while locked left the panel white. Without the presentation the
+E-ink keeps mirroring the default display, where the keyguard and its PIN
+pad are.
+
+**Android 16.** `KeyguardDisplayManager` still decides per display whether to
+show a presentation (the check moved but exists); re-apply the same
+condition there, or exclude the E-ink display by its unique id if a newer
+port makes it a real separate display.
+
 ## 3. Applying them
 
 ```sh
@@ -114,8 +143,8 @@ vendor/a6l-eink-oss/epd/patches/apply.sh . --check   # git apply --check only
 Notes:
 
 - The patches apply to frameworks/base HEAD of the 18.1 tree. Revert any older
-  local E-ink changes to `SystemServiceRegistry.java` and
-  `KeyguardUpdateMonitor.java` first (an earlier port changed the same
+  local E-ink changes to `SystemServiceRegistry.java`,
+  `KeyguardUpdateMonitor.java` and `KeyguardDisplayManager.java` first (an earlier port changed the same
   files), otherwise `git am` stops with a conflict.
 - They become local commits in `frameworks/base`; `repo sync` rebases them.
   If one no longer applies after a sync, resolve with `git am --3way` or
@@ -126,12 +155,14 @@ Notes:
 
 Check on a device: `dumpsys epd` works independently of the patches;
 `getSystemService("epd")` returning non-null in an app, and a finger
-configured on "Back (E-ink)" waking to the E-ink, confirm 0001 and 0002.
+configured on "Back (E-ink)" waking to the E-ink, confirm 0001 and 0002;
+switching or waking to the E-ink while the keyguard is showing shows the
+keyguard (mirror) instead of a white panel, confirming 0003.
 
 ## 4. Porting to Android 16
 
 The service, its policy and its rc file are mostly independent of
-frameworks/base; the two patches have to be redone by hand on the newer
+frameworks/base; the three patches have to be redone by hand on the newer
 sources. What has to be checked or redone:
 
 ### 4.1 0001 (service registration)

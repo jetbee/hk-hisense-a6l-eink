@@ -1,0 +1,55 @@
+From 8816da052a277101872b2d387c902e0661757c90 Mon Sep 17 00:00:00 2001
+From: jetbee <7734987+jetbee@users.noreply.github.com>
+Date: Sat, 3 Oct 2026 12:00:00 +0000
+Subject: [PATCH 3/3] Keyguard: no keyguard presentation on the A6L E-ink
+ display
+
+The A6L E-ink is an external display (FLAG_PRESENTATION, FLAG_SECURE)
+that mirrors the default display. While the keyguard is showing,
+KeyguardDisplayManager put its keyguard presentation on it, so it
+stopped mirroring the default display, where the keyguard and its PIN
+pad are, and the panel stayed white. When ro.hmct.epd.support is "1",
+isKeyguardShowable() now returns false for external displays.
+
+Implemented from cleanroom spec 02-epd-service.md (section 10 item 1).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+Copyright (C) 2026 The a6l-eink-oss authors
+Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
+The patched files keep their own license headers.
+
+ .../com/android/keyguard/KeyguardDisplayManager.java   | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardDisplayManager.java b/packages/SystemUI/src/com/android/keyguard/KeyguardDisplayManager.java
+index d6fabd6..84626be 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardDisplayManager.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardDisplayManager.java
+@@ -25,6 +25,7 @@ import android.hardware.display.DisplayManager;
+ import android.media.MediaRouter;
+ import android.media.MediaRouter.RouteInfo;
+ import android.os.Bundle;
++import android.os.SystemProperties;
+ import android.util.Log;
+ import android.util.SparseArray;
+ import android.view.Display;
+@@ -112,6 +113,15 @@ public class KeyguardDisplayManager {
+             if (DEBUG) Log.i(TAG, "Do not show KeyguardPresentation on a private display");
+             return false;
+         }
++        // Hisense A6L E-ink (a6l-eink-oss, spec 02 section 10 item 1): the E-ink is
++        // an external display that mirrors the default display. A keyguard
++        // presentation would replace the mirror, and the panel would stay white
++        // while the keyguard (and its PIN pad on the default display) is showing.
++        if (mTmpDisplayInfo.type == Display.TYPE_EXTERNAL
++                && "1".equals(SystemProperties.get("ro.hmct.epd.support"))) {
++            if (DEBUG) Log.i(TAG, "Do not show KeyguardPresentation on the A6L E-ink");
++            return false;
++        }
+         return true;
+     }
+     /**
+-- 
+2.52.0
+

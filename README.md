@@ -40,7 +40,7 @@ are in [`QUESTIONS.md`](QUESTIONS.md).
 | `epd/overlay/` | lineage-sdk overlay loading `org.a6leink.epd.EpdKeyHandler` into system_server (spec 02 section 5.1) |
 | `epd/epd.mk` | product fragment: packages, boot jar, rc file, privapp allowlist, overlay, `ro.hmct.epd.support=1` |
 | `epd/BoardConfigEpd.mk` | board fragment: `BOARD_PLAT_PRIVATE_SEPOLICY_DIR` |
-| `epd/patches/frameworks_base/` | frameworks/base patches: `getSystemService("epd")` registration and the keyguard per-finger unlock screen (spec 02 sections 5.2, 5.3); `epd/patches/apply.sh` applies them |
+| `epd/patches/frameworks_base/` | frameworks/base patches: `getSystemService("epd")` registration, the keyguard per-finger unlock screen and no keyguard presentation on the E-ink (spec 02 sections 5.2, 5.3, 10); `epd/patches/apply.sh` applies them |
 
 ## Using it in a device tree
 
