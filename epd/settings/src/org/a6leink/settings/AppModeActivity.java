@@ -17,6 +17,7 @@
 package org.a6leink.settings;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -31,8 +32,10 @@ import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RadioButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -40,6 +43,7 @@ import com.hmct.epd.EpdManager;
 
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,15 +54,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Per-app E-ink display mode (spec 04 sections 3 and 6.1).
+ * Per-app E-ink behaviour (spec 04 sections 3 and 6.1, spec 05 sections 6.4
+ * and 6.5).
  *
  * <p>Lists every package with a launcher activity except input methods, in
  * two groups. "Smooth" means no entry in the service (removeAppMode), so the
- * app gets the service's default; "Clear" means an explicit entry with
- * {@link Epd#MODE_CLEAR} (addAppMode). Any other stored value is shown in the
- * "Clear" group as a custom mode and left alone until the user changes it.
- * Changes go straight to the service, which persists them; there is no save
- * step, no automatic entry for new apps and no bundled list.
+ * app gets the service's default; "Clear" means an explicit entry with the
+ * service's clear mode (addAppMode; the value comes from the service). Any
+ * other stored value is shown in the "Clear" group as a custom mode and left
+ * alone until the user changes it. The switch on a row flips smooth/clear;
+ * tapping the row opens the app's options: the mode and the experimental
+ * "slide one screen". Changes go straight to the service, which persists them
+ * and re-applies the mode if the app is in front; there is no save step, no
+ * automatic entry for new apps and no bundled list.
  */
 public class AppModeActivity extends Activity {
     private static final int TYPE_HEADER = 0;
@@ -70,16 +78,27 @@ public class AppModeActivity extends Activity {
         final String label;
         final Drawable icon;
         Integer mode;
+        boolean slide;
 
-        AppEntry(String pkg, String label, Drawable icon, Integer mode) {
+        AppEntry(String pkg, String label, Drawable icon, Integer mode, boolean slide) {
             this.pkg = pkg;
             this.label = label;
             this.icon = icon;
             this.mode = mode;
+            this.slide = slide;
         }
+    }
 
-        boolean isClear() {
-            return mode != null;
+    /** What a load returns: the apps and the service's mode values. */
+    private static final class Loaded {
+        final List<AppEntry> apps;
+        final int clearMode;
+        final int smoothMode;
+
+        Loaded(List<AppEntry> apps, int clearMode, int smoothMode) {
+            this.apps = apps;
+            this.clearMode = clearMode;
+            this.smoothMode = smoothMode;
         }
     }
 
@@ -91,6 +110,8 @@ public class AppModeActivity extends Activity {
     private final List<Object> mRows = new ArrayList<>();
 
     private EpdManager mEpd;
+    private int mClearMode;
+    private int mSmoothMode;
     private Collator mCollator;
     private int mLoadGeneration;
     private TextView mStatus;
@@ -98,6 +119,7 @@ public class AppModeActivity extends Activity {
     private Button mAllSmooth;
     private Button mAllClear;
     private Adapter mAdapter;
+    private AlertDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,7 +134,7 @@ public class AppModeActivity extends Activity {
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener((parent, view, position, id) -> {
             Object row = mRows.get(position);
-            if (row instanceof AppEntry) toggle((AppEntry) row);
+            if (row instanceof AppEntry) showOptions((AppEntry) row);
         });
         mAllSmooth.setOnClickListener(v -> setAll(false));
         mAllClear.setOnClickListener(v -> setAll(true));
@@ -122,14 +144,19 @@ public class AppModeActivity extends Activity {
     protected void onResume() {
         super.onResume();
         // Reloaded on every resume: apps may have been installed or removed,
-        // and another tool may have changed the service's entries.
+        // and the tile or another tool may have changed the service's entries.
         load();
     }
 
     @Override
     protected void onDestroy() {
+        if (mDialog != null) mDialog.dismiss();
         mWorker.shutdownNow();
         super.onDestroy();
+    }
+
+    private boolean isClear(AppEntry app) {
+        return app.mode != null && app.mode != mSmoothMode;
     }
 
     private void load() {
@@ -138,22 +165,34 @@ public class AppModeActivity extends Activity {
         final InputMethodManager imm = getSystemService(InputMethodManager.class);
         final EpdManager epd = Epd.get(this);
         mWorker.execute(() -> {
-            List<AppEntry> apps = null;
+            Loaded loaded = null;
             Map<?, ?> modes = epd != null ? epd.getAllAppMode() : null;
-            if (modes != null) apps = queryApps(pm, imm, modes);
-            final List<AppEntry> result = apps;
+            Bundle config = modes != null ? Epd.getConfig(this) : null;
+            if (config != null) {
+                String[] slide = config.getStringArray(Epd.KEY_SLIDE);
+                Set<String> slideSet = slide != null
+                        ? new HashSet<>(Arrays.asList(slide)) : new HashSet<>();
+                loaded = new Loaded(queryApps(pm, imm, modes, slideSet),
+                        config.getInt(Epd.KEY_CLEAR_MODE), config.getInt(Epd.KEY_SMOOTH_MODE));
+            }
+            final Loaded result = loaded;
             mMain.post(() -> {
                 if (isDestroyed() || generation != mLoadGeneration) return;
                 mEpd = result != null ? epd : null;
                 mApps.clear();
-                if (result != null) mApps.addAll(result);
+                if (result != null) {
+                    mApps.addAll(result.apps);
+                    mClearMode = result.clearMode;
+                    mSmoothMode = result.smoothMode;
+                }
                 rebuild();
             });
         });
     }
 
     /** Runs on the worker. One row per package that has a launcher activity. */
-    private List<AppEntry> queryApps(PackageManager pm, InputMethodManager imm, Map<?, ?> modes) {
+    private List<AppEntry> queryApps(PackageManager pm, InputMethodManager imm, Map<?, ?> modes,
+            Set<String> slide) {
         Set<String> excluded = new HashSet<>();
         excluded.add(getPackageName());
         if (imm != null) {
@@ -171,7 +210,7 @@ public class AppModeActivity extends Activity {
             CharSequence label = ri.activityInfo.applicationInfo.loadLabel(pm);
             Drawable icon = ri.activityInfo.applicationInfo.loadIcon(pm);
             byPackage.put(pkg, new AppEntry(pkg, label != null ? label.toString() : pkg,
-                    icon, mode));
+                    icon, mode, slide.contains(pkg)));
         }
         return new ArrayList<>(byPackage.values());
     }
@@ -181,7 +220,7 @@ public class AppModeActivity extends Activity {
         List<AppEntry> smooth = new ArrayList<>();
         List<AppEntry> clear = new ArrayList<>();
         for (AppEntry app : mApps) {
-            (app.isClear() ? clear : smooth).add(app);
+            (isClear(app) ? clear : smooth).add(app);
         }
         Collections.sort(smooth, (a, b) -> mCollator.compare(a.label, b.label));
         Collections.sort(clear, (a, b) -> mCollator.compare(a.label, b.label));
@@ -208,13 +247,13 @@ public class AppModeActivity extends Activity {
         mAllClear.setEnabled(mEpd != null && !smooth.isEmpty());
     }
 
-    private void toggle(AppEntry app) {
-        if (mEpd == null) return;
-        final boolean toClear = !app.isClear();
-        app.mode = toClear ? Integer.valueOf(Epd.MODE_CLEAR) : null;
+    private void setClear(AppEntry app, boolean clear) {
+        if (mEpd == null || isClear(app) == clear) return;
+        app.mode = clear ? Integer.valueOf(mClearMode) : null;
         final EpdManager epd = mEpd;
         final String pkg = app.pkg;
-        mWorker.execute(() -> write(epd, pkg, toClear));
+        final int clearMode = mClearMode;
+        mWorker.execute(() -> write(epd, pkg, clear, clearMode));
         rebuild();
     }
 
@@ -222,25 +261,66 @@ public class AppModeActivity extends Activity {
     private void setAll(boolean clear) {
         if (mEpd == null) return;
         final EpdManager epd = mEpd;
+        final int clearMode = mClearMode;
         final List<String> changed = new ArrayList<>();
         for (AppEntry app : mApps) {
-            if (app.isClear() == clear) continue;
-            app.mode = clear ? Integer.valueOf(Epd.MODE_CLEAR) : null;
+            if (isClear(app) == clear) continue;
+            app.mode = clear ? Integer.valueOf(clearMode) : null;
             changed.add(app.pkg);
         }
         mWorker.execute(() -> {
-            for (String pkg : changed) write(epd, pkg, clear);
+            for (String pkg : changed) write(epd, pkg, clear, clearMode);
         });
         rebuild();
     }
 
     /** Runs on the worker. */
-    private static void write(EpdManager epd, String pkg, boolean clear) {
+    private static void write(EpdManager epd, String pkg, boolean clear, int clearMode) {
         if (clear) {
-            epd.addAppMode(pkg, Epd.MODE_CLEAR);
+            epd.addAppMode(pkg, clearMode);
         } else {
             epd.removeAppMode(pkg);
         }
+    }
+
+    /** The app's options: mode and the experimental slide one screen. */
+    private void showOptions(AppEntry app) {
+        if (mEpd == null) return;
+        View view = getLayoutInflater().inflate(R.layout.app_options, null);
+        RadioButton smooth = view.findViewById(R.id.mode_smooth);
+        RadioButton clear = view.findViewById(R.id.mode_clear);
+        CheckBox slide = view.findViewById(R.id.slide);
+        final boolean custom = isClear(app) && app.mode != mClearMode;
+        if (custom) clear.setText(getString(R.string.app_mode_custom, app.mode));
+        (isClear(app) ? clear : smooth).setChecked(true);
+        slide.setChecked(app.slide);
+        smooth.jumpDrawablesToCurrentState();
+        clear.jumpDrawablesToCurrentState();
+        slide.jumpDrawablesToCurrentState();
+
+        if (mDialog != null) mDialog.dismiss();
+        mDialog = new AlertDialog.Builder(this)
+                .setTitle(app.label)
+                .setIcon(app.icon)
+                .setView(view)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (d, which) -> {
+                    // A custom value is kept unless the user picks smooth.
+                    setClear(app, clear.isChecked());
+                    if (slide.isChecked() != app.slide) {
+                        final boolean on = slide.isChecked();
+                        app.slide = on;
+                        final String pkg = app.pkg;
+                        mWorker.execute(() -> {
+                            if (!Epd.setSlide(this, pkg, on)) {
+                                mMain.post(this::load); // show the real state
+                            }
+                        });
+                        rebuild();
+                    }
+                })
+                .create();
+        mDialog.show();
     }
 
     private final class Adapter extends BaseAdapter {
@@ -290,21 +370,28 @@ public class AppModeActivity extends Activity {
                 ((TextView) view).setText((String) row);
                 return view;
             }
-            AppEntry app = (AppEntry) row;
+            final AppEntry app = (AppEntry) row;
             if (view == null) view = inflater.inflate(R.layout.app_mode_row, parent, false);
             ((ImageView) view.findViewById(R.id.icon)).setImageDrawable(app.icon);
             ((TextView) view.findViewById(R.id.label)).setText(app.label);
             TextView summary = view.findViewById(R.id.summary);
-            if (!app.isClear()) {
-                summary.setText(R.string.app_mode_smooth);
-            } else if (app.mode == Epd.MODE_CLEAR) {
-                summary.setText(R.string.app_mode_clear);
+            CharSequence mode;
+            if (!isClear(app)) {
+                mode = getString(R.string.app_mode_smooth);
+            } else if (app.mode == mClearMode) {
+                mode = getString(R.string.app_mode_clear);
             } else {
-                summary.setText(getString(R.string.app_mode_custom, app.mode));
+                mode = getString(R.string.app_mode_custom, app.mode);
             }
+            summary.setText(app.slide
+                    ? getString(R.string.app_mode_summary_with_slide, mode) : mode);
             Switch toggle = view.findViewById(R.id.clear_switch);
-            toggle.setChecked(app.isClear());
+            toggle.setOnCheckedChangeListener(null);
+            toggle.setChecked(isClear(app));
             toggle.jumpDrawablesToCurrentState(); // no thumb animation on the E-ink
+            // The listener posts so the list is not rebuilt inside the switch's callback.
+            toggle.setOnCheckedChangeListener((button, checked) ->
+                    mMain.post(() -> setClear(app, checked)));
             view.setContentDescription(app.label + ", " + summary.getText());
             return view;
         }

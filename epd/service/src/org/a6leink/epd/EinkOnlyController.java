@@ -74,12 +74,30 @@ final class EinkOnlyController {
         return mApplied;
     }
 
-    /** Section 2.3. No-op when already applied. */
+    /** Section 2.3. No-op when already applied (see {@link #enterAfterScreenOn}). */
     void enter() {
         if (mApplied) return;
         mApplied = true;
         Log.i(TAG, "Entering E-ink only");
+        applySetup();
+    }
 
+    /**
+     * Every screen-on into type 4 (spec 02 section 2.4): the whole set-up is
+     * applied again, also when it is still marked as applied from before the
+     * screen-off, because the screen-off/on resets the panels whatever the wake
+     * reason (device test: an E-ink key wake after a sleep from E-ink only left
+     * the LCD lit and touchable).
+     */
+    void enterAfterScreenOn() {
+        final boolean was = mApplied;
+        mApplied = true;
+        Log.i(TAG, was ? "Entering E-ink only (screen on, applied again)"
+                : "Entering E-ink only (screen on)");
+        applySetup();
+    }
+
+    private void applySetup() {
         IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
         try {
             wm.setForcedDisplaySize(Display.DEFAULT_DISPLAY,

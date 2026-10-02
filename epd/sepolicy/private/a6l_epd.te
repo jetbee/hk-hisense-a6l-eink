@@ -29,3 +29,7 @@ allow system_server a6l_epd_service:service_manager find;
 # properties and runs the triggers of init.a6l.epd.rc).
 system_internal_prop(a6l_epd_prop)
 set_prop(system_app, a6l_epd_prop)
+
+# Automatic camera lock (spec 05 section 6.3): the service registers a camera
+# availability listener with cameraserver. system_app may not find it by default.
+allow system_app cameraserver_service:service_manager find;

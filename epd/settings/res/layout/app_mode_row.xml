@@ -54,13 +54,14 @@
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </LinearLayout>
 
-    <!-- On = "Clear"; the whole row is the click target. -->
+    <!-- On = "Clear". The switch flips the mode; the rest of the row opens the
+         app's options. Not focusable, so the row stays clickable in the list. -->
     <Switch
         android:id="@+id/clear_switch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:clickable="false"
+        android:clickable="true"
         android:focusable="false"
         android:importantForAccessibility="no" />
 </LinearLayout>

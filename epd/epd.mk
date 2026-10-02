@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Product fragment for the clean-room E-ink stack (specs 01 and 02).
+# Product fragment for the clean-room E-ink stack (specs 01, 02, 04 and 05).
 # Include it from the device's product makefile:
 #   $(call inherit-product, <path-to-a6l-eink-oss>/epd/epd.mk)
 # and include BoardConfigEpd.mk from BoardConfig.mk.
@@ -32,6 +32,11 @@ PRODUCT_BOOT_JARS += com.hmct.epd
 # Init property bridge (spec 02 section 1.4).
 PRODUCT_COPY_FILES += \
     $(A6L_EPD_DIR)/rootdir/etc/init.a6l.epd.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/init.a6l.epd.rc
+
+# Privileged-permission allowlist of the service app (spec 05 section 6.3:
+# MODIFY_AUDIO_ROUTING for the video lock). Must be installed with the app.
+PRODUCT_COPY_FILES += \
+    $(A6L_EPD_DIR)/permissions/privapp-permissions-a6leink.xml:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/permissions/privapp-permissions-a6leink.xml
 
 # lineage-sdk overlay that loads the E-ink key handler (spec 02 section 5.1).
 PRODUCT_PACKAGE_OVERLAYS += $(A6L_EPD_DIR)/overlay

@@ -19,13 +19,13 @@
 
     <!-- Tile in Settings > Display and the page it opens -->
     <string name="main_title">E-ink apps &amp; tuning</string>
-    <string name="main_summary">Display mode per app, contrast, ghosting</string>
+    <string name="main_summary">Display mode per app, automatic switching, contrast, ghosting</string>
     <string name="service_unavailable">The E-ink service is not running. These settings are not available.</string>
 
     <!-- Per-app display mode -->
     <string name="app_mode_title">App display mode</string>
-    <string name="app_mode_summary">Choose smooth or clear rendering on the E-ink for each app</string>
-    <string name="app_mode_explain">The E-ink offers two display modes. Smooth mode refreshes faster but the picture is weaker. Clear mode gives a cleaner picture but refreshes more slowly; it suits reading apps. Changes apply the next time the app is shown on the E-ink.</string>
+    <string name="app_mode_summary">Choose smooth or clear rendering on the E-ink for each app, and more options</string>
+    <string name="app_mode_explain">The E-ink offers two display modes. Smooth mode refreshes faster but the picture is weaker. Clear mode gives a cleaner picture but refreshes more slowly; it suits reading apps. The switch changes the mode; tap an app for more options. Changes apply at once if the app is on the E-ink. The Quick Settings tile \"E-ink: clear/smooth\" switches the app in front.</string>
     <string name="app_mode_loading">Loading apps…</string>
     <string name="app_mode_empty">No apps found.</string>
     <!-- %1$d: number of apps in the group -->
@@ -50,4 +50,21 @@
     <string name="ghost_heading">Ghosting</string>
     <string name="ghost_summary">Redraws the whole E-ink once to remove traces of earlier pictures. Works only while the E-ink is in use.</string>
     <string name="ghost_clear_now">Clear ghosting now</string>
+
+    <!-- %1$s: the app's mode (Smooth, Clear or custom) -->
+    <string name="app_mode_summary_with_slide">%1$s · Slide one screen (experimental)</string>
+
+    <!-- Options of one app -->
+    <string name="app_options_mode">Display mode on the E-ink</string>
+    <string name="app_options_smooth">Smooth (default)</string>
+    <string name="app_options_clear">Clear</string>
+    <string name="app_options_experimental">Experimental</string>
+    <string name="app_options_slide">Slide one screen (experimental)</string>
+    <string name="app_options_slide_explain">While a finger drags on the screen, the E-ink switches to smooth mode; shortly after the finger is lifted, the app\'s mode comes back. Useful for apps set to Clear. This only approximates the stock feature, which held the picture still during the drag, and may not help with some apps.</string>
+
+    <!-- Automatic switching -->
+    <string name="auto_heading">Automatic switching</string>
+    <string name="auto_camera">Smooth while the camera is in use</string>
+    <string name="auto_video">Smooth while a video plays</string>
+    <string name="auto_explain">Applies to the app in front on the E-ink: smooth mode while it uses a camera, or while it plays video or game sound. Speech (for example read-aloud) and music do not count. The app\'s own mode comes back when it stops.</string>
 </resources>

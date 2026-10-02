@@ -14,11 +14,16 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="8dp">
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp">
 
     <LinearLayout
         android:id="@+id/entry_app_mode"
@@ -76,6 +81,45 @@
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </LinearLayout>
 
+    <!-- Automatic switching (spec 05 section 6.3). -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:paddingTop="24dp"
+        android:text="@string/auto_heading"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="?android:attr/colorAccent" />
+
+    <Switch
+        android:id="@+id/auto_camera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?android:attr/listPreferredItemHeight"
+        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:text="@string/auto_camera"
+        android:textAppearance="?android:attr/textAppearanceListItem" />
+
+    <Switch
+        android:id="@+id/auto_video"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?android:attr/listPreferredItemHeight"
+        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:text="@string/auto_video"
+        android:textAppearance="?android:attr/textAppearanceListItem" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:text="@string/auto_explain"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
     <TextView
         android:id="@+id/unavailable"
         android:layout_width="match_parent"
@@ -87,3 +131,4 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:visibility="gone" />
 </LinearLayout>
+</ScrollView>

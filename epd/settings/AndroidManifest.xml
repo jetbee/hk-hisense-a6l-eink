@@ -21,6 +21,10 @@
          (spec 04 section 5, package visibility for target SDK 30). -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- The service's own per-app options and automatic switches (spec 05
+         section 6.4); signature permission defined by org.a6leink.epd. -->
+    <uses-permission android:name="org.a6leink.epd.permission.EINK_OPTIONS" />
+
     <application
         android:label="@string/app_name"
         android:allowBackup="false"

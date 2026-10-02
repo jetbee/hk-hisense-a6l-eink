@@ -33,11 +33,45 @@ public final class EpdSettings {
     public static final int TYPE_MIRROR = 2;
     public static final int TYPE_EINK = 4;
 
-    // Refresh modes (spec 01 section 2).
+    // Refresh modes (spec 01 section 2). Every other place uses these names;
+    // no refresh-mode number is written anywhere else in the service.
     public static final int MODE_MIRROR = 0;
-    public static final int MODE_FAST = 6;
     /** Steady everyday mode with the stock HWC (spec 02 section 3.2). */
     public static final int MODE_DEFAULT_EINK = 8;
+    /**
+     * "Smooth" (spec 04 section 6.1, spec 05 section 6.4): an app without an
+     * entry, i.e. the service default. Locks (camera, video) and the
+     * slide-one-screen drag force this mode too.
+     */
+    public static final int MODE_SMOOTH = MODE_DEFAULT_EINK;
+    /**
+     * "Clear": the value stored for an app set to clear, and the mode of the
+     * E-ink lock screen (spec 05 section 6.2 step 1). Stock used 3
+     * ({@code EPD_MODE_READING}). The device test decides the value (spec 04
+     * open question 1): 3 was confirmed to take effect on the panel
+     * (2026-10-03, spec 05 section 8). If it is ever retuned, change only this
+     * constant; the settings app and the Quick Settings tile read it from the
+     * service.
+     */
+    public static final int MODE_CLEAR = 3;
+    /** Lowest refresh mode accepted by addAppMode (0 = mirror makes no sense per app). */
+    public static final int MODE_APP_MIN = 1;
+    /**
+     * Highest refresh mode accepted by setEpdDisplayMode and addAppMode: the
+     * highest value written to the node on 18.1 (spec 02 section 3.2), so that
+     * the default can also be stored explicitly (stock accepted 1..7).
+     */
+    public static final int MODE_MAX = MODE_DEFAULT_EINK;
+
+    // Own per-app options and switches (spec 05 section 6.4), served by
+    // EinkOptionsProvider to the settings app.
+    /** Signature permission guarding the options provider. */
+    public static final String PERMISSION_OPTIONS = "org.a6leink.epd.permission.EINK_OPTIONS";
+    public static final String OPTIONS_AUTHORITY = "org.a6leink.epd.options";
+    /** Option: smooth while the front app uses a camera. Default on. */
+    public static final String OPTION_AUTO_CAMERA = "auto_camera";
+    /** Option: smooth while the front app plays video-like audio. Default on. */
+    public static final String OPTION_AUTO_VIDEO = "auto_video";
 
     // Publishing (compatibility facts).
     public static final String PROP_DISPLAY_TYPE = "sys.sysctl.display_type";
@@ -106,6 +140,8 @@ public final class EpdSettings {
 
     // Packages.
     public static final String EINK_LAUNCHER = "com.hmct.einklauncher";
+    /** Second stock home app (spec 02 section 7.5); exempt from the camera lock. */
+    public static final String VISION_HOME = "com.hmct.vision";
 
     // Status screen bitmap (compatibility fact with the stock HWC).
     public static final String BITMAP_PATH = "/kdebuginfo/edpd/bitmap.raw";

@@ -93,4 +93,12 @@
         <item>表面 (液晶)</item>
         <item>背面 (E-ink)</item>
     </string-array>
+
+    <!-- クイック設定タイル -->
+    <string name="tile_label">E-ink: くっきり/なめらか</string>
+    <string name="tile_label_clear">E-ink: くっきり</string>
+    <string name="tile_label_smooth">E-ink: なめらか</string>
+    <string name="tile_not_in_use">E-ink は使用されていません</string>
+    <string name="tile_not_here">この画面では使用できません</string>
+    <string name="tile_no_service">サービスが動作していません</string>
 </resources>

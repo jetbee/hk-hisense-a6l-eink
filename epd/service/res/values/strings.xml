@@ -107,4 +107,12 @@
         <item>Front (LCD)</item>
         <item>Back (E-ink)</item>
     </string-array>
+
+    <!-- Quick Settings tile (spec 05 section 6.5) -->
+    <string name="tile_label">E-ink: clear/smooth</string>
+    <string name="tile_label_clear">E-ink: clear</string>
+    <string name="tile_label_smooth">E-ink: smooth</string>
+    <string name="tile_not_in_use">E-ink not in use</string>
+    <string name="tile_not_here">Not for this screen</string>
+    <string name="tile_no_service">Service not running</string>
 </resources>

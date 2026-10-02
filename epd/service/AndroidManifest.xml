@@ -21,11 +21,32 @@
 
     <!-- Only this service may send the display type broadcast (spec 02 section 1.1). -->
     <protected-broadcast android:name="com.hmct.action.displaychanged" />
+    <!-- Sent by the key handler in system_server on each E-ink key press (spec 02
+         section 5.1); protected so that only the system may send it. -->
+    <protected-broadcast android:name="com.hmct.intent.EINK_KEY_PRESSED" />
+
+    <!-- The settings app reaches the service's own per-app options with this
+         (spec 05 section 6.4). Signature: only apps signed like this one. -->
+    <permission
+        android:name="org.a6leink.epd.permission.EINK_OPTIONS"
+        android:protectionLevel="signature" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Per-app E-ink behaviour (spec 05 section 6). uid system passes these
+         checks anyway; they are declared to document what is used.
+         Front app: task stack listener and focused task (signature). -->
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_STACKS" />
+    <!-- Camera lock: package of the app opening a camera (signature). -->
+    <uses-permission android:name="android.permission.CAMERA_OPEN_CLOSE_LISTENER" />
+    <!-- Video lock: uids in audio playback configurations (signature|privileged:
+         listed in epd/permissions/privapp-permissions-a6leink.xml). -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
+    <!-- Slide one screen (experimental): gesture monitor on display 0 (signature). -->
+    <uses-permission android:name="android.permission.MONITOR_INPUT" />
 
     <application
         android:name=".EpdApplication"
@@ -55,6 +76,27 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Own per-app options for the settings app (spec 05 section 6.4). One
+             instance for all users, in the persistent service process. -->
+        <provider
+            android:name=".EinkOptionsProvider"
+            android:authorities="org.a6leink.epd.options"
+            android:exported="true"
+            android:singleUser="true"
+            android:permission="org.a6leink.epd.permission.EINK_OPTIONS" />
+
+        <!-- Quick Settings tile "E-ink: clear/smooth" (spec 05 section 6.5). -->
+        <service
+            android:name=".EinkModeTileService"
+            android:label="@string/tile_label"
+            android:icon="@drawable/ic_eink_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
 

@@ -18,6 +18,9 @@ package org.a6leink.epd;
 
 import android.graphics.Bitmap;
 import android.os.Binder;
+import android.os.IBinder;
+import android.os.Parcel;
+import android.os.RemoteException;
 import android.os.RemoteCallbackList;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -154,12 +157,12 @@ final class EpdBinder extends IEpdManager.Stub {
 
     @Override
     public void begigResumeActivity(String packageName, String className) {
-        mService.setTopPackage(packageName);
+        mService.onResumeHint(packageName);
     }
 
     @Override
     public void notifyResumedPackage(String name) {
-        mService.setTopPackage(name);
+        mService.onResumeHint(name);
     }
 
     @Override
@@ -291,6 +294,18 @@ final class EpdBinder extends IEpdManager.Stub {
     @Override
     public int getEinkEffect(int type) {
         return mService.getEinkEffect(type);
+    }
+
+    @Override
+    public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
+            throws RemoteException {
+        // "System properties changed" pokes arrive one-way (for example
+        // "service call epd 1599295570", or tools that poke every service). The
+        // native layer already handles them; a Java binder that does not claim
+        // the code answers UNKNOWN_TRANSACTION, which IPCThreadState logs as
+        // "oneway function results ... UNKNOWN_TRANSACTION". Claim it.
+        if (code == IBinder.SYSPROPS_TRANSACTION) return true;
+        return super.onTransact(code, data, reply, flags);
     }
 
     @Override

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The a6l-eink-oss authors
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- Privileged permissions of the E-ink apps (installed to
+     /system_ext/etc/permissions by epd.mk). Platform-signed priv-apps still
+     need an allowlist entry for signature|privileged permissions
+     (PermissionManagerService), and a missing entry stops the boot when
+     ro.control_privapp_permissions=enforce. -->
+<permissions>
+    <privapp-permissions package="org.a6leink.epd">
+        <!-- Video lock (spec 05 section 6.3): uids in audio playback configurations. -->
+        <permission name="android.permission.MODIFY_AUDIO_ROUTING" />
+    </privapp-permissions>
+</permissions>

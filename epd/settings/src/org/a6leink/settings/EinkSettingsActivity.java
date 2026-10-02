@@ -20,15 +20,21 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 
 /**
  * Page injected into Settings > Display ("E-ink apps &amp; tuning", spec 04
- * section 6.4). Links to the per-app display mode and to the tuning page.
+ * section 6.4). Links to the per-app display mode and to the tuning page, and
+ * holds the automatic switches of spec 05 section 6.3 (smooth while the front
+ * app uses the camera or plays a video), which the service stores.
  */
 public class EinkSettingsActivity extends Activity {
     private View mAppMode;
     private View mTuning;
     private View mUnavailable;
+    private Switch mAutoCamera;
+    private Switch mAutoVideo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +47,21 @@ public class EinkSettingsActivity extends Activity {
                 startActivity(new Intent(this, AppModeActivity.class)));
         mTuning.setOnClickListener(v ->
                 startActivity(new Intent(this, TuningActivity.class)));
+        mAutoCamera = findViewById(R.id.auto_camera);
+        mAutoVideo = findViewById(R.id.auto_video);
+    }
+
+    private void bindOption(Switch view, String option, Bundle config) {
+        view.setOnCheckedChangeListener(null);
+        view.setEnabled(config != null);
+        view.setChecked(config != null && config.getBoolean(option, true));
+        view.jumpDrawablesToCurrentState(); // no thumb animation on the E-ink
+        view.setOnCheckedChangeListener((CompoundButton button, boolean on) -> {
+            if (!Epd.setOption(this, option, on)) {
+                // Not stored: show the service's state again.
+                bindOption(view, option, Epd.getConfig(this));
+            }
+        });
     }
 
     @Override
@@ -52,5 +73,8 @@ public class EinkSettingsActivity extends Activity {
         mAppMode.setAlpha(available ? 1f : 0.4f);
         mTuning.setAlpha(available ? 1f : 0.4f);
         mUnavailable.setVisibility(available ? View.GONE : View.VISIBLE);
+        Bundle config = available ? Epd.getConfig(this) : null;
+        bindOption(mAutoCamera, Epd.OPTION_AUTO_CAMERA, config);
+        bindOption(mAutoVideo, Epd.OPTION_AUTO_VIDEO, config);
     }
 }
