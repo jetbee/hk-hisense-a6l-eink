@@ -76,6 +76,24 @@ public final class EpdSettings {
     public static final int CLOCK_STYLE_ANALOG = 0;
     public static final int CLOCK_STYLE_DIGITAL = 1;
 
+    // Sleep screen stage 2 (spec 03 section 5), Settings.System, current user.
+    /** 0 = widgets then notifications (default), 1 = notifications then widgets. */
+    public static final String SLEEP_SECTIONS_ORDER = "a6l_epd_sleep_sections_order";
+    /** JSON array of the chosen widgets with their options, in display order. */
+    public static final String SLEEP_WIDGETS = "a6l_epd_sleep_widgets";
+    /** 1 = show notifications (default), 0 = none. */
+    public static final String SLEEP_NOTIFICATIONS = "a6l_epd_sleep_notifications";
+    /** -1 = as many as fit (default), else 0..6 (0 hides the section). */
+    public static final String SLEEP_NOTIFICATIONS_MAX = "a6l_epd_sleep_notifications_max";
+
+    public static final int ORDER_WIDGETS_FIRST = 0;
+    public static final int ORDER_NOTIFICATIONS_FIRST = 1;
+    public static final int NOTIFICATIONS_MAX_FIT = -1;
+    public static final int NOTIFICATIONS_MAX_LIMIT = 6;
+    public static final int MAX_SLEEP_WIDGETS = 4;
+    /** Host id of the service's AppWidgetHost (host ids are per package). */
+    public static final int WIDGET_HOST_ID = 0x0a6e;
+
     // Properties.
     public static final String PROP_CONTRAST = "persist.sys.epd.contrast";
     public static final String PROP_BLACK = "persist.sys.epd.black";

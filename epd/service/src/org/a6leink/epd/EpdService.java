@@ -16,7 +16,9 @@
 
 package org.a6leink.epd;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -62,6 +64,7 @@ final class EpdService {
     private final PropertyBridge mBridge = new PropertyBridge();
     private final EinkOnlyController mEinkOnly;
     private final StatusScreen mStatus;
+    private final SleepWidgetHost mWidgets;
     private final AppModeStore mStore;
 
     final Object mLock = new Object();
@@ -92,7 +95,8 @@ final class EpdService {
         thread.start();
         mHandler = new Handler(thread.getLooper());
         mEinkOnly = new EinkOnlyController(context, mHandler, mBridge);
-        mStatus = new StatusScreen(context, mHandler, mBridge);
+        mWidgets = new SleepWidgetHost(context);
+        mStatus = new StatusScreen(context, mHandler, mBridge, mWidgets);
         mStore = new AppModeStore(context);
     }
 
@@ -106,6 +110,8 @@ final class EpdService {
         Log.i(TAG, "Registered service '" + EpdSettings.SERVICE_NAME + "'");
 
         mHandler.post(this::initOnHandler);
+        // Sleep screen widgets (spec 03 section 3): listen for the life of the service.
+        mWidgets.start();
     }
 
     private void initOnHandler() {
@@ -144,11 +150,36 @@ final class EpdService {
         }, boot, null, mHandler);
 
         new ForegroundTracker(mHandler, this::setTopPackage).start();
+        grantNotificationListenerAccess();
 
         if ("1".equals(SystemProperties.get(EpdSettings.PROP_BOOT_COMPLETED))) {
             // Process restart after boot: no boot broadcast will come.
             scheduleEinkReady("process start after boot");
         }
+    }
+
+    /**
+     * Spec 03 section 4: as a system app the service grants its own notification
+     * listener access, so the user does not have to.
+     */
+    private void grantNotificationListenerAccess() {
+        try {
+            NotificationManager nm = mContext.getSystemService(NotificationManager.class);
+            ComponentName listener = SleepNotificationListener.component(mContext);
+            if (!nm.isNotificationListenerAccessGranted(listener)) {
+                nm.setNotificationListenerAccessGranted(listener, true);
+                Log.i(TAG, "Granted notification listener access to " + listener);
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Cannot grant notification listener access", e);
+        }
+    }
+
+    /** From the notification listener (main thread): re-check the sleeping screen. */
+    void onNotificationsChanged() {
+        mHandler.post(() -> {
+            if (mEinkReady) mStatus.onNotificationsChanged();
+        });
     }
 
     // ---------------------------------------------------------------------------------------

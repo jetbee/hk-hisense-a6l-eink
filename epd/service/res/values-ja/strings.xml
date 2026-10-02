@@ -26,7 +26,7 @@
     <string name="status_date_skeleton">MMMdEEE</string>
 
     <string name="status_settings_title">E-ink</string>
-    <string name="status_settings_summary">ステータス画面とボタン</string>
+    <string name="status_settings_summary">スリープ画面、ウィジェット、通知、ボタン</string>
     <string name="status_settings_heading">ステータス画面</string>
     <string name="status_settings_clock">スリープ画面に時計を表示</string>
     <string name="status_settings_clock_summary">画面オフ中は 1 分ごとに更新します</string>
@@ -36,6 +36,53 @@
     <string name="buttons_heading">ボタン</string>
     <string name="buttons_swap_on_eink">E-ink 使用中はボタンを入れ替える</string>
     <string name="buttons_swap_on_eink_summary">E-ink の使用中は、電源ボタンで液晶画面に戻り、E-ink キーでスリープします。このとき E-ink では電源ボタンの長押し (電源メニュー) は使えません。</string>
+
+    <string name="sleep_notification_listener">E-ink スリープ画面</string>
+    <string name="sleep_notification_hidden">内容を非表示</string>
+    <plurals name="sleep_more">
+        <item quantity="other">ほか %1$d 件</item>
+    </plurals>
+
+    <string name="sleep_widgets_heading">ウィジェット</string>
+    <string name="sleep_widgets_summary">画面オフ中、時計の下にウィジェットを 4 個まで白黒で表示し、時計と一緒に更新します。ウィジェットをタップすると高さ・反転・コントラストを設定できます。</string>
+    <string name="sleep_widgets_empty">ウィジェットなし</string>
+    <string name="sleep_widgets_add">ウィジェットを追加</string>
+    <string name="sleep_widgets_unavailable">E-ink のウィジェットはデバイスの所有者のみが選択できます。</string>
+    <string name="sleep_widgets_pick">ウィジェットを選択</string>
+    <string name="sleep_widgets_none_installed">インストールされているウィジェットがありません。</string>
+    <string name="sleep_widgets_add_failed">このウィジェットは追加できません。</string>
+    <string name="sleep_widget_missing">使用できなくなったウィジェット</string>
+    <string name="sleep_widget_move_up">上へ移動</string>
+    <string name="sleep_widget_move_down">下へ移動</string>
+    <string name="sleep_widget_remove">削除</string>
+    <string name="sleep_widget_options">E-ink 上のウィジェット</string>
+    <string name="sleep_widget_size">高さ</string>
+    <string name="sleep_widget_size_default">ウィジェット既定の高さ</string>
+    <string name="sleep_widget_size_small">小</string>
+    <string name="sleep_widget_size_medium">中</string>
+    <string name="sleep_widget_size_large">大</string>
+    <string name="sleep_widget_invert">反転 (暗い背景に明るい文字のウィジェット用)</string>
+    <string name="sleep_widget_invert_short">反転</string>
+    <string name="sleep_widget_contrast_high">高コントラスト</string>
+    <string name="sleep_widget_options_separator">、</string>
+
+    <string name="sleep_notifications_heading">通知</string>
+    <string name="sleep_notifications_switch">スリープ画面に通知を表示</string>
+    <string name="sleep_notifications_summary">新しい順にウィジェットの下に表示します。ロック画面の設定に従い、ロック画面に通知を表示しない場合は表示せず、機密性の高い内容を非表示にする場合はアプリ名のみを表示します。サイレント通知と実行中の通知は表示しません。更新は最短 10 秒ごとです。</string>
+    <string name="sleep_notifications_max">最大表示件数</string>
+    <string-array name="sleep_notifications_max_entries">
+        <item>収まるだけ</item>
+        <item>表示しない</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+    <string name="sleep_sections_order">時計の下の表示順</string>
+    <string name="sleep_sections_widgets_first">ウィジェット、通知の順</string>
+    <string name="sleep_sections_notifications_first">通知、ウィジェットの順</string>
 
     <string name="finger_unlock_title">指紋ロック解除後の画面</string>
     <string name="finger_unlock_summary">指ごとにロック解除後の画面を選択します</string>

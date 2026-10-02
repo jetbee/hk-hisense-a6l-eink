@@ -45,6 +45,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Sleep screen notifications (spec 03 section 4). The service grants itself
+             listener access at start. Widgets need BIND_APPWIDGET, which uid system
+             passes without declaring it. -->
+        <service
+            android:name=".SleepNotificationListener"
+            android:label="@string/sleep_notification_listener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Settings > Security: per-finger unlock screen (spec 02 section 5.3). -->
         <activity
             android:name=".FingerUnlockSettingsActivity"
@@ -66,7 +79,8 @@
                 android:resource="@string/finger_unlock_summary" />
         </activity>
 
-        <!-- Settings > Display: E-ink status screen (spec 02 section 6.6). -->
+        <!-- Settings > Display: E-ink status screen (spec 02 section 6.6) with the
+             sleep screen widgets and notifications (spec 03). -->
         <activity
             android:name=".StatusScreenSettingsActivity"
             android:label="@string/status_settings_title"

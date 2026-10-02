@@ -31,7 +31,7 @@
 
     <!-- E-ink settings page (Settings > Display): status screen and buttons -->
     <string name="status_settings_title">E-ink</string>
-    <string name="status_settings_summary">Status screen and buttons</string>
+    <string name="status_settings_summary">Sleep screen, widgets, notifications and buttons</string>
     <string name="status_settings_heading">Status screen</string>
     <string name="status_settings_clock">Clock on the sleeping screen</string>
     <string name="status_settings_clock_summary">Redrawn once a minute while the screen is off</string>
@@ -41,6 +41,60 @@
     <string name="buttons_heading">Buttons</string>
     <string name="buttons_swap_on_eink">Swap buttons on the E-ink</string>
     <string name="buttons_swap_on_eink_summary">While the E-ink is in use, the power button switches back to the LCD and the E-ink key puts the phone to sleep. The power menu (long press) is then not available on the E-ink.</string>
+
+    <!-- Sleep screen stage 2: widgets and notifications (drawn on the rear panel) -->
+    <string name="sleep_notification_listener">E-ink sleep screen</string>
+    <!-- Line of a notification whose content the lock screen settings hide -->
+    <string name="sleep_notification_hidden">Contents hidden</string>
+    <!-- Last line when not all notifications fit. %1$d: number not shown -->
+    <plurals name="sleep_more">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+
+    <!-- E-ink settings page: sleep screen widgets -->
+    <string name="sleep_widgets_heading">Widgets</string>
+    <string name="sleep_widgets_summary">Up to 4 widgets below the clock while the screen is off, drawn in black and white and repainted with the clock. Tap a widget for its height, invert and contrast.</string>
+    <string name="sleep_widgets_empty">No widgets</string>
+    <string name="sleep_widgets_add">Add widget</string>
+    <string name="sleep_widgets_unavailable">Widgets on the E-ink can be chosen only by the device owner.</string>
+    <string name="sleep_widgets_pick">Choose a widget</string>
+    <string name="sleep_widgets_none_installed">No widgets are installed.</string>
+    <string name="sleep_widgets_add_failed">This widget cannot be added.</string>
+    <string name="sleep_widget_missing">Widget no longer available</string>
+    <string name="sleep_widget_move_up">Move up</string>
+    <string name="sleep_widget_move_down">Move down</string>
+    <string name="sleep_widget_remove">Remove</string>
+    <string name="sleep_widget_options">Widget on the E-ink</string>
+    <string name="sleep_widget_size">Height</string>
+    <string name="sleep_widget_size_default">Widget\'s own height</string>
+    <string name="sleep_widget_size_small">Small</string>
+    <string name="sleep_widget_size_medium">Medium</string>
+    <string name="sleep_widget_size_large">Large</string>
+    <string name="sleep_widget_invert">Invert (for light text on a dark background)</string>
+    <string name="sleep_widget_invert_short">Inverted</string>
+    <string name="sleep_widget_contrast_high">High contrast</string>
+    <!-- Summary of a widget's options: list separator -->
+    <string name="sleep_widget_options_separator">, </string>
+
+    <!-- E-ink settings page: sleep screen notifications -->
+    <string name="sleep_notifications_heading">Notifications</string>
+    <string name="sleep_notifications_switch">Notifications on the sleeping screen</string>
+    <string name="sleep_notifications_summary">Newest first, below the widgets. They follow the lock screen settings: none when the lock screen shows no notifications, and only the app name when it hides sensitive content. Silent and ongoing notifications are not shown. Updated at most every 10 seconds.</string>
+    <string name="sleep_notifications_max">Maximum shown</string>
+    <string-array name="sleep_notifications_max_entries">
+        <item>As many as fit</item>
+        <item>None</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+    <string name="sleep_sections_order">Order below the clock</string>
+    <string name="sleep_sections_widgets_first">Widgets, then notifications</string>
+    <string name="sleep_sections_notifications_first">Notifications, then widgets</string>
 
     <!-- Per-finger unlock screen settings page (Settings > Security) -->
     <string name="finger_unlock_title">Fingerprint unlock screen</string>
