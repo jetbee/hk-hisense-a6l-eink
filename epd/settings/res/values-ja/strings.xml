@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The a6l-eink-oss authors
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <string name="app_name">E-ink 設定</string>
+
+    <string name="main_title">E-ink のアプリと画質調整</string>
+    <string name="main_summary">アプリごとの表示モード、コントラスト、残像</string>
+    <string name="service_unavailable">E-ink サービスが動作していません。この設定は使用できません。</string>
+
+    <string name="app_mode_title">アプリの表示モード</string>
+    <string name="app_mode_summary">E-ink での表示をアプリごとに「なめらか」または「くっきり」に設定します</string>
+    <string name="app_mode_explain">E-ink には 2 つの表示モードがあります。なめらかモードは書き換えが速い代わりに画質が落ちます。くっきりモードは書き換えが遅い代わりに画質が良く、読書アプリに向いています。変更は、次にそのアプリを E-ink に表示したときに反映されます。</string>
+    <string name="app_mode_loading">アプリを読み込んでいます…</string>
+    <string name="app_mode_empty">アプリが見つかりません。</string>
+    <string name="app_mode_smooth_header">なめらかモード (%1$d 個のアプリ)</string>
+    <string name="app_mode_clear_header">くっきりモード (%1$d 個のアプリ)</string>
+    <string name="app_mode_smooth">なめらか</string>
+    <string name="app_mode_clear">くっきり</string>
+    <string name="app_mode_custom">くっきり (カスタム モード %1$d)</string>
+    <string name="app_mode_all_smooth">すべてなめらか</string>
+    <string name="app_mode_all_clear">すべてくっきり</string>
+
+    <string name="tuning_title">E-ink の画質調整</string>
+    <string name="tuning_summary">コントラスト、黒と白のしきい値、残像の消去</string>
+    <string name="tuning_heading">画質</string>
+    <string name="tuning_explain">0 から 100 までの値です。スライダーから指を離すと適用され、E-ink の使用中に反映されます。</string>
+    <string name="tuning_contrast">コントラスト</string>
+    <string name="tuning_black">黒のしきい値</string>
+    <string name="tuning_white">白のしきい値</string>
+    <string name="tuning_reset">初期値に戻す</string>
+    <string name="ghost_heading">残像</string>
+    <string name="ghost_summary">E-ink 全体を一度書き換えて、前の画面の跡を消します。E-ink の使用中のみ有効です。</string>
+    <string name="ghost_clear_now">今すぐ残像を消す</string>
+</resources>

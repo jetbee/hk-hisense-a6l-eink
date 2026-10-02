@@ -19,11 +19,13 @@
 
 A6L_EPD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
-# Client library on the boot class path (spec 01 section 1) and the service
-# app (spec 02 section 1.1; installs to /system_ext/priv-app/A6lEinkService).
+# Client library on the boot class path (spec 01 section 1), the service
+# app (spec 02 section 1.1; installs to /system_ext/priv-app/A6lEinkService)
+# and the settings app (spec 04 section 6; /system_ext/priv-app/A6lEinkSettings).
 PRODUCT_PACKAGES += \
     com.hmct.epd \
-    A6lEinkService
+    A6lEinkService \
+    A6lEinkSettings
 
 PRODUCT_BOOT_JARS += com.hmct.epd
 

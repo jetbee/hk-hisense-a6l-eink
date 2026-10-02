@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The a6l-eink-oss authors
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <string name="app_name">E-ink settings</string>
+
+    <!-- Tile in Settings > Display and the page it opens -->
+    <string name="main_title">E-ink apps &amp; tuning</string>
+    <string name="main_summary">Display mode per app, contrast, ghosting</string>
+    <string name="service_unavailable">The E-ink service is not running. These settings are not available.</string>
+
+    <!-- Per-app display mode -->
+    <string name="app_mode_title">App display mode</string>
+    <string name="app_mode_summary">Choose smooth or clear rendering on the E-ink for each app</string>
+    <string name="app_mode_explain">The E-ink offers two display modes. Smooth mode refreshes faster but the picture is weaker. Clear mode gives a cleaner picture but refreshes more slowly; it suits reading apps. Changes apply the next time the app is shown on the E-ink.</string>
+    <string name="app_mode_loading">Loading apps…</string>
+    <string name="app_mode_empty">No apps found.</string>
+    <!-- %1$d: number of apps in the group -->
+    <string name="app_mode_smooth_header">Smooth mode (%1$d apps)</string>
+    <string name="app_mode_clear_header">Clear mode (%1$d apps)</string>
+    <string name="app_mode_smooth">Smooth</string>
+    <string name="app_mode_clear">Clear</string>
+    <!-- %1$d: refresh mode number stored by another tool -->
+    <string name="app_mode_custom">Clear (custom mode %1$d)</string>
+    <string name="app_mode_all_smooth">All smooth</string>
+    <string name="app_mode_all_clear">All clear</string>
+
+    <!-- E-ink tuning -->
+    <string name="tuning_title">E-ink tuning</string>
+    <string name="tuning_summary">Contrast, black and white thresholds, clear ghosting</string>
+    <string name="tuning_heading">Picture</string>
+    <string name="tuning_explain">Values from 0 to 100. A change is applied when you release the slider, and takes effect on the E-ink when it is in use.</string>
+    <string name="tuning_contrast">Contrast</string>
+    <string name="tuning_black">Black threshold</string>
+    <string name="tuning_white">White threshold</string>
+    <string name="tuning_reset">Reset to defaults</string>
+    <string name="ghost_heading">Ghosting</string>
+    <string name="ghost_summary">Redraws the whole E-ink once to remove traces of earlier pictures. Works only while the E-ink is in use.</string>
+    <string name="ghost_clear_now">Clear ghosting now</string>
+</resources>
