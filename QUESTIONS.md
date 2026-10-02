@@ -454,3 +454,27 @@ Decisions taken for the per-app behaviour in `epd/service` and
     load is logged with its counts, and each `addAppMode` / `removeAppMode`
     that changes the map is logged with the caller's uid.
 
+## Device findings of spec 02 section 10 (2026-10-03, userdebug-15)
+
+78. **Keyguard presentation on the E-ink** (item 1). Third frameworks/base
+    patch, `0003-Keyguard-no-keyguard-presentation-on-the-A6L-E-ink-display.patch`:
+    `KeyguardDisplayManager.isKeyguardShowable()` returns false for
+    `Display.TYPE_EXTERNAL` displays when `ro.hmct.epd.support` is `"1"`.
+    Chosen over matching the display by name or unique id because the 18.1
+    layout has exactly one external display (the E-ink) and the property
+    already marks the device; other devices are unaffected. `apply.sh` needs
+    no change (it applies every `*.patch` in name order).
+79. **Transient 4 -> 0 before a swapped E-ink-key sleep** (item 2). No code
+    path of this project sets type 0 for the swapped sleep: the key handler
+    sleeps directly, and only two calls set 0 (the swapped power-button
+    release and the unswapped E-ink key). Two causes are guarded against: (a)
+    the swap decision on the input thread uses a cached setting; the handler
+    now reads it again before the unswapped "switch to the LCD", so a stale
+    cache sleeps instead; (b) any `setDisplayType` with a screen-on type that
+    arrives while the device is no longer interactive (going to sleep, before
+    the screen-off broadcast) is ignored, so the type goes 4 -> -1 directly
+    whoever asked. Every `setDisplayType` is now logged with the caller's uid
+    and pid, so the device log names the source if it still happens.
+80. **Bitmap one commit late** (item 3): noted, not investigated or changed
+    here (spec 02 says no change yet).
+

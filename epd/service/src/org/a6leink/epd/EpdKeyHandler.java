@@ -206,7 +206,11 @@ public final class EpdKeyHandler implements DeviceKeyHandler {
                 mPowerManager.wakeUp(SystemClock.uptimeMillis(),
                         PowerManager.WAKE_REASON_WAKE_KEY, "org.a6leink.epd:EINK_KEY");
             } else if (epd.getDisplayType() == EpdSettings.TYPE_EINK) {
-                if (userSetting(EpdSettings.EINK_KEY_ACTION, 0) == 1) {
+                // The swap was decided on the input thread from a cached setting;
+                // read it again so a stale cache never turns the swapped "sleep"
+                // into a switch to the LCD (spec 02 section 10 item 2).
+                readSwapSetting();
+                if (mSwapOnEink || userSetting(EpdSettings.EINK_KEY_ACTION, 0) == 1) {
                     mPowerManager.goToSleep(SystemClock.uptimeMillis(),
                             PowerManager.GO_TO_SLEEP_REASON_POWER_BUTTON, 0);
                 } else {

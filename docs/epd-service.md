@@ -214,6 +214,10 @@ the LCD powers on, and the power manager ramps the backlight up. The service
 therefore switches the front touch and the backlight off again immediately
 and after **300, 800, 1500 and 3000 ms**, as long as E-ink only is still
 applied. A new screen-on or leaving E-ink only cancels pending repetitions.
+A client `setDisplayType` with a screen-on type that arrives while the device
+is going to sleep (no longer interactive, screen-off broadcast not yet
+received) is ignored, so E-ink only goes to -1 directly (spec 02 section 10
+item 2); every `setDisplayType` is logged with the caller's uid and pid.
 Before that, every screen-on into type 4 applies the whole E-ink-only set-up
 of 4.1 again (forced size, touches, brightness mode, observer, backlight) and
 logs "Entering E-ink only (screen on...)", whatever woke the device (E-ink

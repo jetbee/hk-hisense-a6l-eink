@@ -329,7 +329,22 @@ final class EpdService {
         return type;
     }
 
+    /**
+     * From clients. Spec 02 section 10 item 2: once the device is going to sleep
+     * (no longer interactive, the screen-off broadcast still to come) a request
+     * for a screen-on type is not applied, so E-ink only goes to -1 directly
+     * as with the power button instead of passing through 0 ("Leaving E-ink
+     * only") just before the screen-off. The caller is logged either way.
+     */
     void setDisplayType(int requested) {
+        final int uid = Binder.getCallingUid();
+        final int pid = Binder.getCallingPid();
+        if (requested >= 0 && !isInteractive()) {
+            Log.i(TAG, "setDisplayType(" + requested + ") from uid " + uid + " pid " + pid
+                    + " ignored: going to sleep");
+            return;
+        }
+        Log.i(TAG, "setDisplayType(" + requested + ") from uid " + uid + " pid " + pid);
         synchronized (mLock) {
             int type = restrictLocked(requested);
             if (type == NO_DISPLAY) {
@@ -518,6 +533,16 @@ final class EpdService {
     void setWakeupLocked(boolean locked) {
         synchronized (mLock) {
             mWakeupLocked = locked;
+        }
+    }
+
+    private boolean isInteractive() {
+        final long ident = Binder.clearCallingIdentity();
+        try {
+            PowerManager pm = mContext.getSystemService(PowerManager.class);
+            return pm == null || pm.isInteractive();
+        } finally {
+            Binder.restoreCallingIdentity(ident);
         }
     }
 
