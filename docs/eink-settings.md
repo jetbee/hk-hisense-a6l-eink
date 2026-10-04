@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2026 The hk-hisense-a6l-eink authors, licensed under CC BY 4.0
+Copyright (C) 2026 jetbee, licensed under CC BY 4.0
 SPDX-License-Identifier: CC-BY-4.0
 -->
 

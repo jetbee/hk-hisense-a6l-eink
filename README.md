@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2026 The hk-hisense-a6l-eink authors
+Copyright (C) 2026 jetbee
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
@@ -113,4 +113,4 @@ E-ink. Rear touch gestures are not used (9.3).
 - Code (Java, AIDL, makefiles, Android.bp, resources, init and sepolicy files, patches): Apache License 2.0 ([LICENSE](LICENSE)).
 - Documentation (`docs/`, the README files and `QUESTIONS.md`): Creative Commons Attribution 4.0 International (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
 
-Copyright (C) 2026 The hk-hisense-a6l-eink authors.
+Copyright (C) 2026 jetbee.
