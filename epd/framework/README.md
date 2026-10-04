@@ -20,7 +20,7 @@ the same name.
 
 Following the clean-room approach, it was written from the specification
 `01-com.hmct.epd.md` (spec 01; not published), Android documentation and
-AOSP/LineageOS sources, by people other than those who investigated the
+AOSP/LineageOS sources, by developers other than those who investigated the
 stock behaviour and wrote the specification. Public names, constant values,
 transaction codes and misspellings (`DetectCompleteLisenter`, `begigResumeActivity`,
 `updateExteralPaper`, `ACTION_READING_TOMEOUT`, `WAKEUP_SORUCE_FROM_USER`)

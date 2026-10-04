@@ -14,7 +14,7 @@ versions.
 
 Following the clean-room approach, the investigation of the stock behaviour
 and the writing of the specifications, and the writing of the source code
-from those specifications, were done by separate people. The code here was
+from those specifications, were done by separate developers. The code here was
 written from the specifications
 
 - `01-com.hmct.epd.md` (spec 01: the client library),
