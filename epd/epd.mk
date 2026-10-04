@@ -1,4 +1,4 @@
-# Copyright (C) 2026 The a6l-eink-oss authors
+# Copyright (C) 2026 The hk-hisense-a6l-eink authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 # Product fragment for the clean-room E-ink stack (specs 01, 02, 04 and 05).
 # Include it from the device's product makefile:
-#   $(call inherit-product, <path-to-a6l-eink-oss>/epd/epd.mk)
+#   $(call inherit-product, <path-to-hk-hisense-a6l-eink>/epd/epd.mk)
 # and include BoardConfigEpd.mk from BoardConfig.mk.
 
 A6L_EPD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))

@@ -18,7 +18,7 @@ Implemented from cleanroom specs 01-com.hmct.epd.md and
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
-Copyright (C) 2026 The a6l-eink-oss authors
+Copyright (C) 2026 The hk-hisense-a6l-eink authors
 Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
 The patched files keep their own license headers.
 
@@ -34,7 +34,7 @@ index 98ec786..4708268 100644
      };
  
 +    /**
-+     * Hisense A6L E-ink (a6l-eink-oss, spec 02 section 5.3): per-finger unlock
++     * Hisense A6L E-ink (hk-hisense-a6l-eink, spec 02 section 5.3): per-finger unlock
 +     * screen. Settings.System "fp_unlock_screen" (per user) is a JSON object
 +     * mapping fingerprint ids to "0" (LCD) or "1" (E-ink). Before the unlock is
 +     * handled, the E-ink service is told which screen to use: as the wake-up

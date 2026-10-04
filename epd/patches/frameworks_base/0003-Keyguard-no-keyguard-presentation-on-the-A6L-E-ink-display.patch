@@ -15,7 +15,7 @@ Implemented from cleanroom spec 02-epd-service.md (section 10 item 1).
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
-Copyright (C) 2026 The a6l-eink-oss authors
+Copyright (C) 2026 The hk-hisense-a6l-eink authors
 Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
 The patched files keep their own license headers.
 
@@ -38,7 +38,7 @@ index d6fabd6..84626be 100644
              if (DEBUG) Log.i(TAG, "Do not show KeyguardPresentation on a private display");
              return false;
          }
-+        // Hisense A6L E-ink (a6l-eink-oss, spec 02 section 10 item 1): the E-ink is
++        // Hisense A6L E-ink (hk-hisense-a6l-eink, spec 02 section 10 item 1): the E-ink is
 +        // an external display that mirrors the default display. A keyguard
 +        // presentation would replace the mirror, and the panel would stay white
 +        // while the keyguard (and its PIN pad on the default display) is showing.

@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2026 The a6l-eink-oss authors, licensed under CC BY 4.0
+Copyright (C) 2026 The hk-hisense-a6l-eink authors, licensed under CC BY 4.0
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
@@ -749,9 +749,9 @@ Relied on, provided by the device tree:
 
 ## 12. Building it into a device
 
-1. Put the repository in the source tree, e.g. `vendor/a6l-eink-oss`.
+1. Put the repository in the source tree, e.g. `vendor/a6l-eink`.
 2. Product makefile:
-   `$(call inherit-product, vendor/a6l-eink-oss/epd/epd.mk)`.
+   `$(call inherit-product, vendor/a6l-eink/epd/epd.mk)`.
    `epd.mk` adds the packages `com.hmct.epd`, `A6lEinkService` and
    `A6lEinkSettings`, puts `com.hmct.epd` in `PRODUCT_BOOT_JARS`, copies the
    bridge rc file to `system/etc/init/init.a6l.epd.rc` and the privileged
@@ -762,9 +762,9 @@ Relied on, provided by the device tree:
    (`PRODUCT_PACKAGE_OVERLAYS`) and sets `ro.hmct.epd.support=1`
    (`PRODUCT_SYSTEM_EXT_PROPERTIES`).
 3. `BoardConfig.mk`:
-   `include vendor/a6l-eink-oss/epd/BoardConfigEpd.mk`
+   `include vendor/a6l-eink/epd/BoardConfigEpd.mk`
    (adds `epd/sepolicy/private` to `BOARD_PLAT_PRIVATE_SEPOLICY_DIR`).
-4. Apply the frameworks/base patches: `vendor/a6l-eink-oss/epd/patches/apply.sh .`
+4. Apply the frameworks/base patches: `vendor/a6l-eink/epd/patches/apply.sh .`
    (`--check` only verifies). See [patches.md](patches.md).
 5. The device tree keeps: the vendor init rc with the E-ink node permissions,
    the writes of `epd_connect` and rear `tpenable` at `sys.boot_completed=1`,

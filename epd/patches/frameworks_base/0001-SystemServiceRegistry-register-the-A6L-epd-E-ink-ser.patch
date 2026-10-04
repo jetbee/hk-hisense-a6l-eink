@@ -6,7 +6,7 @@ Subject: [PATCH 1/2] SystemServiceRegistry: register the A6L "epd" E-ink
 
 Context.getSystemService("epd") returns a com.hmct.epd.EpdManager
 wrapping the "epd" binder, published by the E-ink service app of
-a6l-eink-oss. The manager class lives in the com.hmct.epd boot jar, so
+hk-hisense-a6l-eink. The manager class lives in the com.hmct.epd boot jar, so
 the cached fetcher reaches it by reflection; a missing binder or class
 is reported as "service not found" and the caller gets null. The
 registration is unconditional (the stock ro.hmct.epd.support gate is
@@ -17,7 +17,7 @@ Implemented from cleanroom specs 01-com.hmct.epd.md and
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ---
-Copyright (C) 2026 The a6l-eink-oss authors
+Copyright (C) 2026 The hk-hisense-a6l-eink authors
 Licensed under the Apache License, Version 2.0 (SPDX-License-Identifier: Apache-2.0).
 The patched files keep their own license headers.
 
@@ -50,7 +50,7 @@ index e599a5c..c496410 100644
      }
  
 +    /**
-+     * Registers "epd", the E-ink service of the Hisense A6L (a6l-eink-oss,
++     * Registers "epd", the E-ink service of the Hisense A6L (hk-hisense-a6l-eink,
 +     * spec 02 section 5.2): a cached service whose fetcher wraps the "epd"
 +     * binder in a com.hmct.epd.EpdManager. The manager lives in the
 +     * com.hmct.epd boot jar, which is itself built against the framework, so

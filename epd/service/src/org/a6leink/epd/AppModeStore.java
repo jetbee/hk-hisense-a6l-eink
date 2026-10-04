@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 The a6l-eink-oss authors
+ * Copyright (C) 2026 The hk-hisense-a6l-eink authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

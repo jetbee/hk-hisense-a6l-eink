@@ -1,4 +1,4 @@
-# Copyright (C) 2026 The a6l-eink-oss authors
+# Copyright (C) 2026 The hk-hisense-a6l-eink authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 # Board fragment for the clean-room E-ink stack (spec 02 section 1.3).
 # Include it from the device's BoardConfig.mk:
-#   include <path-to-a6l-eink-oss>/epd/BoardConfigEpd.mk
+#   include <path-to-hk-hisense-a6l-eink>/epd/BoardConfigEpd.mk
 
 A6L_EPD_BOARD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 

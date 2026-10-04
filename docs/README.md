@@ -1,11 +1,11 @@
 <!--
-Copyright (C) 2026 The a6l-eink-oss authors, licensed under CC BY 4.0
+Copyright (C) 2026 The hk-hisense-a6l-eink authors, licensed under CC BY 4.0
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
 # Documentation
 
-> **概要（日本語）** a6l-eink-oss（Hisense A6L の E-ink 部分のクリーンルーム実装）の
+> **概要（日本語）** hk-hisense-a6l-eink（Hisense A6L の E-ink 部分のクリーンルーム実装）の
 > ドキュメント一覧です。クライアントライブラリ `com.hmct.epd`、E-ink サービス、
 > frameworks/base パッチ、スリープ画面（ウィジェットと通知）、アプリごとの E-ink 動作、
 > E-ink 設定アプリについて説明しています。

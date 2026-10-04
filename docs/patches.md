@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2026 The a6l-eink-oss authors, licensed under CC BY 4.0
+Copyright (C) 2026 The hk-hisense-a6l-eink authors, licensed under CC BY 4.0
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
@@ -132,8 +132,8 @@ port makes it a real separate display.
 
 ```sh
 # from the top of the LineageOS 18.1 source tree
-vendor/a6l-eink-oss/epd/patches/apply.sh .           # git am --3way, one commit per patch
-vendor/a6l-eink-oss/epd/patches/apply.sh . --check   # git apply --check only
+vendor/a6l-eink/epd/patches/apply.sh .           # git am --3way, one commit per patch
+vendor/a6l-eink/epd/patches/apply.sh . --check   # git apply --check only
 ```
 
 `apply.sh <android-source-root> [--check]` maps the directory
@@ -150,7 +150,7 @@ Notes:
   If one no longer applies after a sync, resolve with `git am --3way` or
   re-create the change by hand from the description above.
 - Applying by hand works too:
-  `git -C frameworks/base am --3way vendor/a6l-eink-oss/epd/patches/frameworks_base/*.patch`.
+  `git -C frameworks/base am --3way vendor/a6l-eink/epd/patches/frameworks_base/*.patch`.
 - Rebuild the framework and SystemUI (a normal full build does that).
 
 Check on a device: `dumpsys epd` works independently of the patches;

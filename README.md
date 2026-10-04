@@ -1,9 +1,9 @@
 <!--
-Copyright (C) 2026 The a6l-eink-oss authors
-SPDX-License-Identifier: Apache-2.0
+Copyright (C) 2026 The hk-hisense-a6l-eink authors
+SPDX-License-Identifier: CC-BY-4.0
 -->
 
-# a6l-eink-oss
+# hk-hisense-a6l-eink
 
 Open-source, clean-room replacement of the E-ink ("epd") parts of the
 Hisense A6L (front 1080x2340 LCD, rear 720x1440 E-ink) for LineageOS 18.1
@@ -44,10 +44,10 @@ are in [`QUESTIONS.md`](QUESTIONS.md).
 
 ## Using it in a device tree
 
-1. Put the repository in the source tree (for example `vendor/a6l-eink-oss`).
-2. In the product makefile: `$(call inherit-product, vendor/a6l-eink-oss/epd/epd.mk)`.
-3. In `BoardConfig.mk`: `include vendor/a6l-eink-oss/epd/BoardConfigEpd.mk`.
-4. Apply the framework patches: `vendor/a6l-eink-oss/epd/patches/apply.sh .`
+1. Put the repository in the source tree (for example `vendor/a6l-eink`).
+2. In the product makefile: `$(call inherit-product, vendor/a6l-eink/epd/epd.mk)`.
+3. In `BoardConfig.mk`: `include vendor/a6l-eink/epd/BoardConfigEpd.mk`.
+4. Apply the framework patches: `vendor/a6l-eink/epd/patches/apply.sh .`
    (`--check` only verifies). They are made against frameworks/base of
    LineageOS 18.1; revert any older local E-ink changes to the same files
    first.
@@ -110,4 +110,7 @@ E-ink. Rear touch gestures are not used (9.3).
 
 ## License
 
-Apache License 2.0. Copyright (C) 2026 The a6l-eink-oss authors.
+- Code (Java, AIDL, makefiles, Android.bp, resources, init and sepolicy files, patches): Apache License 2.0 ([LICENSE](LICENSE)).
+- Documentation (`docs/`, the README files and `QUESTIONS.md`): Creative Commons Attribution 4.0 International (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/).
+
+Copyright (C) 2026 The hk-hisense-a6l-eink authors.

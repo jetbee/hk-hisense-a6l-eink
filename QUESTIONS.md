@@ -1,6 +1,6 @@
 <!--
-Copyright (C) 2026 The a6l-eink-oss authors
-SPDX-License-Identifier: Apache-2.0
+Copyright (C) 2026 The hk-hisense-a6l-eink authors
+SPDX-License-Identifier: CC-BY-4.0
 -->
 
 # Open questions (implementation of spec 01, com.hmct.epd)

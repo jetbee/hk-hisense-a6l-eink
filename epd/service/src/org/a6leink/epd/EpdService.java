@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 The a6l-eink-oss authors
+ * Copyright (C) 2026 The hk-hisense-a6l-eink authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1203,7 +1203,7 @@ final class EpdService {
         }
 
         synchronized (mLock) {
-            pw.println("E-ink service (a6l-eink-oss)");
+            pw.println("E-ink service (hk-hisense-a6l-eink)");
             pw.println("  display type: " + mDisplayType + ", previous: " + mPreviousType
                     + ", last screen-on: " + mLastScreenOnType);
             pw.println("  e-ink ready: " + mEinkReady + " (scheduled: " + mReadyScheduled + ")");
