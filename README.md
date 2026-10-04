@@ -5,13 +5,17 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # hk-hisense-a6l-eink
 
-Open-source, clean-room replacement of the E-ink ("epd") parts of the
-Hisense A6L (front 1080x2340 LCD, rear 720x1440 E-ink) for LineageOS 18.1
-(Android 11), as groundwork for later Android versions.
+Open-source replacement, following the clean-room approach, of the E-ink
+("epd") parts of the Hisense A6L (front 1080x2340 LCD, rear 720x1440
+E-ink) for LineageOS 18.1 (Android 11), as groundwork for later Android
+versions.
 
 ## Provenance
 
-Everything here was written only from the clean-room specifications
+Following the clean-room approach, the investigation of the stock behaviour
+and the writing of the specifications, and the writing of the source code
+from those specifications, were done by separate people. The code here was
+written from the specifications
 
 - `01-com.hmct.epd.md` (spec 01: the client library),
 - `02-epd-service.md` (spec 02: the E-ink service),
@@ -20,12 +24,14 @@ Everything here was written only from the clean-room specifications
 - `04-eink-settings.md` (spec 04: the E-ink settings app), and
 - `05-per-app-eink.md` (spec 05: per-app E-ink behaviour),
 
-the Android documentation and AOSP/LineageOS sources. Names, codes and
-values needed for compatibility with stock apps (binder name `epd`, AIDL
-descriptors and transaction codes, settings keys, properties, broadcasts,
-sysfs nodes, the bitmap file format) are taken from those specs. Every
-commit names the specs it used. Decisions on points the specs leave open
-are in [`QUESTIONS.md`](QUESTIONS.md).
+the Android documentation and AOSP/LineageOS sources. The specifications
+themselves are not published. Names, codes and values needed for
+compatibility with stock apps (binder name `epd`, AIDL descriptors and
+transaction codes, settings keys, properties, broadcasts, sysfs nodes, the
+bitmap file format) are taken from those specifications. Every commit names
+the specifications it used. Decisions on points the specifications leave
+open are in [`QUESTIONS.md`](QUESTIONS.md). The design and development
+records are preserved in an internal archive.
 
 ## Layout
 

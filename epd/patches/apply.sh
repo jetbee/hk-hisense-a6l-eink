@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Applies the framework patches of the clean-room E-ink stack to a
+# Applies the framework patches of the E-ink stack to a
 # LineageOS 18.1 source tree.
 #
 #   apply.sh <android-source-root> [--check]

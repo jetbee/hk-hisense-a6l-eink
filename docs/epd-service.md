@@ -22,7 +22,7 @@ The service implements `com.hmct.epd.IEpdManager` (see
 `epd/epd.mk`, `epd/BoardConfigEpd.mk`, framework hooks in `epd/patches/`
 ([patches.md](patches.md)).
 
-Sources: clean-room specs 01 (`01-com.hmct.epd.md`), 02
+Sources: specs 01 (`01-com.hmct.epd.md`), 02
 (`02-epd-service.md`, including the product decisions of its section 9) and
 05 (`05-per-app-eink.md`, per-app behaviour, section 8 below), and the code
 in this repository. Decisions on points the specs left open are

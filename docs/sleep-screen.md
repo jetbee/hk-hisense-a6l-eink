@@ -21,7 +21,7 @@ rear panel shows while the phone's screen is off. Stage 1 draws a header
 with the clock, the date and the battery level. Stage 2, described here,
 adds the user's **widgets** and **notifications** below it.
 
-Sources: clean-room spec 02 (`02-epd-service.md`, section 6) and spec 03
+Sources: spec 02 (`02-epd-service.md`, section 6) and spec 03
 (`03-sleep-screen-stage2.md`), the Android documentation and AOSP sources
 (AppWidgetHost, NotificationListenerService, and the lock screen notification
 rules of SystemUI for the meaning of the public settings). Decisions on

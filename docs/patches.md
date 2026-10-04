@@ -19,7 +19,7 @@ They are the only changes this project makes outside its own directory; the
 rest of the E-ink stack is an app, a boot jar, an rc file, policy and an
 overlay ([epd-service.md](epd-service.md)).
 
-Sources: clean-room specs 01 (`01-com.hmct.epd.md`, section 1) and 02
+Sources: specs 01 (`01-com.hmct.epd.md`, section 1) and 02
 (`02-epd-service.md`, sections 5.2, 5.3 and 10), and the patches themselves.
 
 The patches carry their own licence note (Apache-2.0 for the added code); the

@@ -18,7 +18,7 @@ This document describes the client side of the E-ink stack of the Hisense A6L
 implemented in `epd/framework/` of this repository. The service side is in
 [epd-service.md](epd-service.md).
 
-Sources: clean-room spec 01 (`01-com.hmct.epd.md`), spec 02
+Sources: spec 01 (`01-com.hmct.epd.md`), spec 02
 (`02-epd-service.md`) for service behaviour, and the code in this repository.
 
 ## 1. What it is for

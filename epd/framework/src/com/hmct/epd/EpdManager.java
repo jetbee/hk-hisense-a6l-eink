@@ -36,7 +36,7 @@ import java.util.Map;
  * swallowed and the method returns the documented failure value instead.
  *
  * <p>Public names, values and overloads (including misspellings) follow the
- * compatibility facts of clean-room spec 01 and must not be changed.
+ * compatibility facts of spec 01 and must not be changed.
  */
 public class EpdManager {
 

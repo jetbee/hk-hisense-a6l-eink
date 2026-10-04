@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Product fragment for the clean-room E-ink stack (specs 01, 02, 04 and 05).
+# Product fragment for the E-ink stack (specs 01, 02, 04 and 05).
 # Include it from the device's product makefile:
 #   $(call inherit-product, <path-to-hk-hisense-a6l-eink>/epd/epd.mk)
 # and include BoardConfigEpd.mk from BoardConfig.mk.

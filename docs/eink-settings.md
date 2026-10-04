@@ -28,7 +28,7 @@ SPDX-License-Identifier: CC-BY-4.0
 > キーボードなし、端末全体で 1 つの設定、はユーザーの決定事項です（spec 05 第 8 節）。
 
 The app lives in `epd/settings/` and implements the recommended scope of
-clean-room spec 04 section 6, and the per-app UI of spec 05 section 6.5, on
+spec 04 section 6, and the per-app UI of spec 05 section 6.5, on
 top of the service in `epd/service/` (see
 [epd-service.md](epd-service.md)) and the client library in `epd/framework/`
 (see [epd-api.md](epd-api.md)). It does not reproduce the stock

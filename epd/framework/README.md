@@ -18,10 +18,11 @@ the same name.
 
 ## Provenance
 
-This is a clean-room implementation written only from the specification
-`cleanroom/specs/01-com.hmct.epd.md` (spec 01), Android documentation and
-AOSP/LineageOS sources. Public names, constant values, transaction codes and
-misspellings (`DetectCompleteLisenter`, `begigResumeActivity`,
+Following the clean-room approach, it was written from the specification
+`01-com.hmct.epd.md` (spec 01; not published), Android documentation and
+AOSP/LineageOS sources, by people other than those who investigated the
+stock behaviour and wrote the specification. Public names, constant values,
+transaction codes and misspellings (`DetectCompleteLisenter`, `begigResumeActivity`,
 `updateExteralPaper`, `ACTION_READING_TOMEOUT`, `WAKEUP_SORUCE_FROM_USER`)
 are compatibility facts taken from that spec. Spec decisions left open are
 recorded in `/QUESTIONS.md`.

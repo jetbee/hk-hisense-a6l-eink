@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Clean-room client library for the A6L E-ink ("epd") system service.
+// Client library for the A6L E-ink ("epd") system service.
 // Intended to be placed on the boot class path (PRODUCT_BOOT_JARS).
 java_library {
     name: "com.hmct.epd",

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Board fragment for the clean-room E-ink stack (spec 02 section 1.3).
+# Board fragment for the E-ink stack (spec 02 section 1.3).
 # Include it from the device's BoardConfig.mk:
 #   include <path-to-hk-hisense-a6l-eink>/epd/BoardConfigEpd.mk
 
